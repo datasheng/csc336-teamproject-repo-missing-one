@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import ProtectedRoute from "../components/ProtectedRoute";
+import Navbar from "../components/Navbar";
 
 export default function Profile() {
   const [userData, setUserData] = useState(null);
@@ -13,6 +14,8 @@ export default function Profile() {
   }, []);
 
   return (
+    <div>
+        <Navbar />
     <ProtectedRoute>
       <div className="flex min-h-screen flex-col items-center p-24">
         <div className="max-w-md w-full">
@@ -29,5 +32,6 @@ export default function Profile() {
         </div>
       </div>
     </ProtectedRoute>
+    </div>
   );
 } 
