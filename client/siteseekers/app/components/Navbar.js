@@ -21,31 +21,57 @@ export default function Navbar() {
   };
 
   return (
-    <nav>
-      <ul>
-        {!isLoggedIn ? (
-          <>
-            <li>
-              <Link href="/register">Register</Link>
-            </li>
-            <li>
-              <Link href="/login">Login</Link>
-            </li>
-          </>
-        ) : (
-          <>
-            <li>
-              <Link href="/profile">Profile</Link>
-            </li>
-            <li>
-              <button onClick={handleLogout}>Logout</button>
-            </li>
-          </>
-        )}
-        <li>
-          <Link href="/dashboard">Dashboard</Link>
-        </li>
-      </ul>
+    <nav className="fixed top-0 w-full bg-white shadow-md z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo/Brand */}
+          <div className="flex-shrink-0">
+            <Link href="/" className="text-xl font-bold text-gray-800">
+              SiteSeekers
+            </Link>
+          </div>
+
+          {/* Navigation Links */}
+          <div className="flex items-center space-x-4">
+            <Link href="/" className="text-gray-600 hover:text-gray-900">
+              Home
+            </Link>
+            
+            {!isLoggedIn ? (
+              <>
+                <Link 
+                  href="/register" 
+                  className="text-gray-600 hover:text-gray-900"
+                >
+                  Register
+                </Link>
+                <Link 
+                  href="/login" 
+                  className="text-gray-600 hover:text-gray-900"
+                >
+                  Login
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link 
+                  href="/profile" 
+                  className="text-gray-600 hover:text-gray-900"
+                >
+                  Profile
+                </Link>
+                <button 
+                  onClick={handleLogout}
+                  className="text-gray-600 hover:text-gray-900"
+                >
+                  Logout
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="border-b"></div>
     </nav>
   );
 }
