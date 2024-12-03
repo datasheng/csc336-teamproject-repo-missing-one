@@ -1,22 +1,51 @@
-import React from "react";
+"use client";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
-const Navbar = () => {
+export default function Navbar() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    // Check if user is logged in by looking for token in localStorage
+    const token = localStorage.getItem('token');
+    setIsLoggedIn(!!token);
+  }, []);
+
+  const handleLogout = () => {
+    // Clear token from localStorage
+    localStorage.removeItem('token');
+    setIsLoggedIn(false);
+    router.push('/'); // Redirect to home page after logout
+  };
+
   return (
-    <>
-      <header className="flex items-center justify-between p-6 mx-10 h-20">
-        <div className="text-lg font-bold">SiteSeekers</div>
-        <div className="flex gap-5">
-          <h2 className="hover:cursor-pointer hover:text-white p-3 rounded-md hover:bg-orange-500">
-            Home
-          </h2>
-          <h2 className="hover:cursor-pointer hover:text-white p-3 rounded-md hover:bg-orange-500">
-            Profile
-          </h2>
-        </div>
-      </header>
-      <hr></hr>
-    </>
+    <nav>
+      <ul>
+        {!isLoggedIn ? (
+          <>
+            <li>
+              <Link href="/register">Register</Link>
+            </li>
+            <li>
+              <Link href="/login">Login</Link>
+            </li>
+          </>
+        ) : (
+          <>
+            <li>
+              <Link href="/profile">Profile</Link>
+            </li>
+            <li>
+              <button onClick={handleLogout}>Logout</button>
+            </li>
+          </>
+        )}
+        <li>
+          <Link href="/dashboard">Dashboard</Link>
+        </li>
+      </ul>
+    </nav>
   );
-};
-
-export default Navbar;
+}
