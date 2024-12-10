@@ -42,22 +42,25 @@ export default function Listing() {
 
     useEffect(() => {
     const storedUserData = localStorage.getItem("userData");
+    
     if (storedUserData) {
-      const { user_type } = JSON.parse(storedUserData);
-      setUserType(user_type);
+      const parsedData = JSON.parse(storedUserData);
+      setUserType(parsedData.userType);
     }
   }, []);
 
 
     const handleApply = (jobId) => {
-        if (!userType) {
-          alert("You must be logged in to apply for a job.");
-          return;
+        const token = localStorage.getItem("token");
+        if (!token) {
+            alert("You must be logged in to apply for a job.");
+            return;
         }
-    
+
+        console.log("Current user type:", userType);
         if (userType !== "contractor") {
-          alert("Only contractors can apply for jobs.");
-          return;
+            alert("Only contractors can apply for jobs.");
+            return;
         }
 
     };

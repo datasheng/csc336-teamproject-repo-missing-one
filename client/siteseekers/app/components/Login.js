@@ -32,6 +32,14 @@ const Login = () => {
         throw new Error(data.error || 'Error logging in');
       }
       
+      localStorage.setItem("token", "logged-in");
+      localStorage.setItem("userData", JSON.stringify({
+        user_type: formData.user_type,
+        name: data.name,
+        email: data.email,
+        userId: data.userId
+      }));
+      
       alert(data.message); 
       router.push('/');
     } catch (error) {
