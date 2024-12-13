@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const authRoutes = require("./routes/auth");
 const cors = require('cors');
+const listingsRouter = require('./routes/listings');
 
 const app = express();
 
@@ -14,6 +15,7 @@ app.use(cors({
   
 // Mount routes
 app.use("/auth", authRoutes);
+app.use('/api/listings', listingsRouter);
 
 // Start the server
 const PORT = 3001;
