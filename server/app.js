@@ -9,7 +9,7 @@ const app = express();
 app.use(express.json()); // For parsing JSON requests
 app.use(cors({
     origin: 'http://localhost:3000',
-    methods: ['GET', 'POST'],
+    methods: ['GET', 'PUT', 'POST'],
     credentials: true
   }));
   

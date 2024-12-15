@@ -41,14 +41,30 @@ router.get("/:contractor_id", async (req, res) => {
         }
 
         if (results.length === 0) {
-            return res.status(404).json({ error: "Profile not found" });
-        }
+            // Profile not found, create a default profile
+            const insertQuery = `INSERT INTO profile (contractor_id, bio, phone_number, role_status) VALUES (?, '', '1234567890', '')`;
+            db.execute(insertQuery, [contractor_id], (err, insertResults) => {
+                if (err) {
+                    console.error("Database error:", err);
+                    return res.status(500).json({ error: err.message });
+                }
 
-        const profile = results[0];
-        res.status(200).json(profile);
+                const newProfile = {
+                    profile_id: insertResults.insertId,
+                    contractor_id: contractor_id,
+                    bio: '',
+                    phone_number: '',
+                    role_status: ''
+                };
+
+                res.status(201).json(newProfile);
+            });
+        } else {
+            const profile = results[0];
+            res.status(200).json(profile);
+        }
     });
 });
-
 router.put("/:contractor_id", async (req, res) => {
   const { contractor_id } = req.params;
   const { bio, phone_number, role_status } = req.body;
@@ -59,7 +75,7 @@ router.put("/:contractor_id", async (req, res) => {
     WHERE contractor_id = ?
   `;
 
-  db.execute(query, [bio, phone_number, role_status, contractor_id], (err, results) => {
+  db.execute(query, [bio, phone_number, "", contractor_id], (err, results) => {
     if (err) {
       console.error("Error updating profile:", err);
       return res.status(500).json({ error: "Database error" });
@@ -112,10 +128,66 @@ router.get("/skills/:contractor_id", async (req, res) => {
     }
 
     if (results.length === 0) {
+       // Skills not found, create a default skills entry
+      const insertQuery = `
+        INSERT INTO skills (profile_id, skills, experience, education) 
+        VALUES ((SELECT profile_id FROM profile WHERE contractor_id = ?), '', '', '')
+      `;
+      db.execute(insertQuery, [contractor_id], (err, insertResults) => {
+        if (err) {
+          console.error("Database error:", err);
+          return res.status(500).json({ error: err.message });
+        }
+
+        const newSkills = {
+          skills_id: insertResults.insertId,
+          contractor_id: contractor_id,
+          skills: '',
+          experience: '',
+          education: ''
+        };
+
+        res.status(201).json(newSkills);
+      });
+    } else {
+      const skills = results[0];
+      res.status(200).json(skills);
+    }
+  });
+});
+
+router.put("/skills/:contractor_id", async (req, res) => {
+  const { contractor_id } = req.params;
+  const { skills, experience, education } = req.body;
+
+  const query = `
+    UPDATE skills s
+    JOIN profile p ON s.profile_id = p.profile_id
+    SET s.skills = ?, s.experience = ?, s.education = ?
+    WHERE p.contractor_id = ?;
+  `;
+
+  db.execute(query, [skills, experience, education, contractor_id], (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: err.message });
+    }
+
+    if (results.affectedRows === 0) {
       return res.status(404).json({ error: "Skills not found for the contractor" });
     }
 
-    res.status(200).json(results);
+    db.execute(`SELECT * FROM skills s
+                JOIN profile p ON s.profile_id = p.profile_id
+                WHERE p.contractor_id = ?`, [contractor_id], (err, results) => {
+      if (err) {
+        console.error("Error fetching updated skills:", err);
+        return res.status(500).json({ error: "Database error" });
+      }
+
+      const updatedSkills = results[0];
+      res.status(200).json(updatedSkills);
+    });
   });
 });
 

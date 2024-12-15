@@ -9,6 +9,7 @@ const Profile = ({ userId }) => {
   const [skills, setSkills] = useState("");
   const [experience, setExperience] = useState("");
   const [education, setEducation] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -35,7 +36,6 @@ const Profile = ({ userId }) => {
           throw new Error(`Error: ${response.status} ${response.statusText}`);
         }
         const data = await response.json();
-        console.log(data);
         setSkills(data.skills || "");
         setExperience(data.experience || "");
         setEducation(data.education || "");
@@ -88,7 +88,27 @@ const Profile = ({ userId }) => {
         throw new Error(`Error: ${response.status} ${response.statusText}`);
       }
       const updatedProfile = await response.json();
+      console.log("Updated profile:", updatedProfile);
       setUserProfile(updatedProfile);
+
+      // Update skills
+      const skillsResponse = await fetch(`http://localhost:3001/profile/skills/${userId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ skills, experience, education }),
+      });
+      if (!skillsResponse.ok) {
+        throw new Error(`Error: ${skillsResponse.status} ${skillsResponse.statusText}`);
+      }
+      const updatedSkills = await skillsResponse.json();
+      console.log("Updated skills:", updatedSkills);
+      setSkills(updatedSkills.skills);
+      setExperience(updatedSkills.experience);
+      setEducation(updatedSkills.education);
+
+      setIsEditing(false);
     } catch (error) {
       setError(error.message);
     }
@@ -99,60 +119,94 @@ const Profile = ({ userId }) => {
 
   return (
     <div>
-      <div>
+      <div className="my-4">
         <label htmlFor="bio"><strong>Bio:</strong></label>
-        <textarea
-          id="bio"
-          value={bio}
-          onChange={handleBioChange}
-          className="w-full p-2 mt-2 border rounded"
-        />
+        {isEditing ? (
+          <textarea
+            id="bio"
+            value={bio}
+            onChange={handleBioChange}
+            className="w-full p-2 mt-2 border rounded"
+          />
+        ) : (
+          <p>{bio}</p>
+        )}
       </div>
-      <div>
+      <div className="my-4"> 
         <label htmlFor="phone_number"><strong>Phone Number:</strong></label>
-        <input
-          id="phone_number"
-          type="tel"
-          placeholder="1234567890"
-          value={phoneNumber}
-          onChange={handlePhoneNumberChange}
-          className="w-full p-2 mt-2 border rounded"
-        />
+        {isEditing ? (
+          <input
+            id="phone_number"
+            type="tel"
+            placeholder="1234567890"
+            value={phoneNumber}
+            onChange={handlePhoneNumberChange}
+            className="w-full p-2 mt-2 border rounded"
+          />
+        ) : (
+          <p>{phoneNumber}</p>
+        )}
       </div>
-      <div className="mt-4">
+      <div className="my-4">
         <label htmlFor="skills"><strong>Skills</strong></label>
-        <textarea
-          id="skills"
-          type="text"
-          placeholder="Enter your skills"
-          value={skills}
-          onChange={handleSkillsChange}
-          className="w-full p-2 mt-2 border rounded"
-        />
+        {isEditing ? (
+          <textarea
+            id="skills"
+            type="text"
+            placeholder="Enter your skills"
+            value={skills}
+            onChange={handleSkillsChange}
+            className="w-full p-2 mt-2 border rounded"
+          />
+        ) : (
+          <p>{skills}</p>
+        )}
       </div>
-      <div className="mt-4">
+      <div className="my-4">
         <label htmlFor="experience"><strong>Experience</strong></label>
-        <textarea
-          id="experience"
-          type="text"
-          placeholder="Enter your experience"
-          value={experience}
-          onChange={handleExperienceChange}
-          className="w-full p-2 mt-2 border rounded"
-        />
+        {isEditing ? (
+          <textarea
+            id="experience"
+            type="text"
+            placeholder="Enter your experience"
+            value={experience}
+            onChange={handleExperienceChange}
+            className="w-full p-2 mt-2 border rounded"
+          />
+        ) : (
+          <p>{experience}</p>
+        )}
       </div>
-      <div className="mt-4">
+      <div className="my-4">
         <label htmlFor="education"><strong>Education</strong></label>
-        <textarea
-          id="education"
-          type="text"
-          placeholder="Enter your education"
-          value={education}
-          onChange={handleEducationChange}
-          className="w-full p-2 mt-2 border rounded"
-        />
+        {isEditing ? (
+          <textarea
+            id="education"
+            type="text"
+            placeholder="Enter your education"
+            value={education}
+            onChange={handleEducationChange}
+            className="w-full p-2 mt-2 border rounded"
+          />
+        ) : (
+          <p>{education}</p>
+        )}
       </div>
-      
+      {isEditing ? (
+        <button
+          onClick={handleSaveProfile}
+          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
+        >
+          Save Profile
+        </button>
+      ) : (
+        <button
+          onClick={() => setIsEditing(true)}
+          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
+        >
+          Edit Profile
+        </button>
+      )}
     </div>
   );
 };
