@@ -191,5 +191,28 @@ router.put("/skills/:contractor_id", async (req, res) => {
   });
 });
 
+router.get('/listings/:userId', (req, res) => {
+  const { userId } = req.params;
+  const query = 'SELECT * FROM job WHERE client_id = ?';
+
+  db.execute(query, [userId], (err, results) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: err.message });
+    }
+    const formattedResults = results.map(job => ({
+      ...job,
+      date_posted: new Date(parseInt(job.date_posted)).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+    }));
+
+
+    res.status(200).json(formattedResults);
+  });
+});
+
 
 module.exports = router;

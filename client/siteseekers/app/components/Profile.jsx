@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-const Profile = ({ userId }) => {
+const Profile = ({ userId, userData }) => {
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [bio, setBio] = useState("");
@@ -10,7 +10,8 @@ const Profile = ({ userId }) => {
   const [experience, setExperience] = useState("");
   const [education, setEducation] = useState("");
   const [isEditing, setIsEditing] = useState(false);
-
+  const [listings, setListings] = useState([]);
+  //console.log("User data: ", userData);
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -46,9 +47,24 @@ const Profile = ({ userId }) => {
       }
     };
 
+    const fetchListings = async () => {
+      try {
+        const response = await fetch(`http://localhost:3001/profile/listings/${userId}`);
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status} ${response.statusText}`);
+        }
+        //console.log("Listings response:", response);
+        const data = await response.json();
+        setListings(data);
+      } catch (error) {
+        setError(error.message);
+      }
+    };
+
     if (userId) {
       fetchProfile();
       fetchSkills();
+      fetchListings();
     }
   }, [userId]);
 
@@ -107,7 +123,7 @@ const Profile = ({ userId }) => {
       setSkills(updatedSkills.skills);
       setExperience(updatedSkills.experience);
       setEducation(updatedSkills.education);
-
+      
       setIsEditing(false);
     } catch (error) {
       setError(error.message);
@@ -116,99 +132,143 @@ const Profile = ({ userId }) => {
 
   if (loading) return <p>Loading profile data...</p>;
   if (error) return <p>Error loading profile: {error}</p>;
-
+  if (userData.userType === "contractor") {
   return (
-    <div>
-      <div className="my-4">
-        <label htmlFor="bio"><strong>Bio:</strong></label>
+    <div className="flex min-h-screen flex-col items-center p-24">
+      <div className="max-w-md w-full bg-white p-6 rounded-lg shadow-md">
+        <h1 className="text-2xl font-bold mb-4">Profile</h1>
+        <p className="mb-2"><strong>Email:</strong> {userData.email}</p>
+        <p className="mb-2"><strong>Name:</strong> {userData.name}</p>
+        <div className="my-4">
+          <label htmlFor="bio"><strong>Bio:</strong></label>
+          {isEditing ? (
+            <textarea
+              id="bio"
+              value={bio}
+              onChange={handleBioChange}
+              className="w-full p-2 mt-2 border rounded"
+            />
+          ) : (
+            <p>{bio}</p>
+          )}
+        </div>
+        <div className="my-4"> 
+          <label htmlFor="phone_number"><strong>Phone Number:</strong></label>
+          {isEditing ? (
+            <input
+              id="phone_number"
+              type="tel"
+              placeholder="1234567890"
+              value={phoneNumber}
+              onChange={handlePhoneNumberChange}
+              className="w-full p-2 mt-2 border rounded"
+            />
+          ) : (
+            <p>{phoneNumber}</p>
+          )}
+        </div>
+        <div className="my-4">
+          <label htmlFor="skills"><strong>Skills</strong></label>
+          {isEditing ? (
+            <textarea
+              id="skills"
+              type="text"
+              placeholder="Enter your skills"
+              value={skills}
+              onChange={handleSkillsChange}
+              className="w-full p-2 mt-2 border rounded"
+            />
+          ) : (
+            <p>{skills}</p>
+          )}
+        </div>
+        <div className="my-4">
+          <label htmlFor="experience"><strong>Experience</strong></label>
+          {isEditing ? (
+            <textarea
+              id="experience"
+              type="text"
+              placeholder="Enter your experience"
+              value={experience}
+              onChange={handleExperienceChange}
+              className="w-full p-2 mt-2 border rounded"
+            />
+          ) : (
+            <p>{experience}</p>
+          )}
+        </div>
+        <div className="my-4">
+          <label htmlFor="education"><strong>Education</strong></label>
+          {isEditing ? (
+            <textarea
+              id="education"
+              type="text"
+              placeholder="Enter your education"
+              value={education}
+              onChange={handleEducationChange}
+              className="w-full p-2 mt-2 border rounded"
+            />
+          ) : (
+            <p>{education}</p>
+          )}
+        </div>
         {isEditing ? (
-          <textarea
-            id="bio"
-            value={bio}
-            onChange={handleBioChange}
-            className="w-full p-2 mt-2 border rounded"
-          />
+          <button
+            onClick={handleSaveProfile}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
+          >
+            Save Profile
+          </button>
         ) : (
-          <p>{bio}</p>
+          <button
+            onClick={() => setIsEditing(true)}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
+          >
+            Edit Profile
+          </button>
         )}
-      </div>
-      <div className="my-4"> 
-        <label htmlFor="phone_number"><strong>Phone Number:</strong></label>
-        {isEditing ? (
-          <input
-            id="phone_number"
-            type="tel"
-            placeholder="1234567890"
-            value={phoneNumber}
-            onChange={handlePhoneNumberChange}
-            className="w-full p-2 mt-2 border rounded"
-          />
-        ) : (
-          <p>{phoneNumber}</p>
-        )}
-      </div>
-      <div className="my-4">
-        <label htmlFor="skills"><strong>Skills</strong></label>
-        {isEditing ? (
-          <textarea
-            id="skills"
-            type="text"
-            placeholder="Enter your skills"
-            value={skills}
-            onChange={handleSkillsChange}
-            className="w-full p-2 mt-2 border rounded"
-          />
-        ) : (
-          <p>{skills}</p>
-        )}
-      </div>
-      <div className="my-4">
-        <label htmlFor="experience"><strong>Experience</strong></label>
-        {isEditing ? (
-          <textarea
-            id="experience"
-            type="text"
-            placeholder="Enter your experience"
-            value={experience}
-            onChange={handleExperienceChange}
-            className="w-full p-2 mt-2 border rounded"
-          />
-        ) : (
-          <p>{experience}</p>
-        )}
-      </div>
-      <div className="my-4">
-        <label htmlFor="education"><strong>Education</strong></label>
-        {isEditing ? (
-          <textarea
-            id="education"
-            type="text"
-            placeholder="Enter your education"
-            value={education}
-            onChange={handleEducationChange}
-            className="w-full p-2 mt-2 border rounded"
-          />
-        ) : (
-          <p>{education}</p>
-        )}
-      </div>
-      {isEditing ? (
-        <button
-          onClick={handleSaveProfile}
-          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
-        >
-          Save Profile
-        </button>
-      ) : (
-        <button
-          onClick={() => setIsEditing(true)}
-          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
-        >
-          Edit Profile
-        </button>
-      )}
+    </div>
     </div>
   );
+}
+
+else {
+  return (
+    <>
+    <div className="flex flex-col items-center p-8">
+      <div className="max-w-md w-full bg-white p-6 rounded-lg shadow-md">
+        <h1 className="text-2xl font-bold mb-4">Profile</h1>
+        <p className="mb-2"><strong>Email:</strong> {userData.email}</p>
+        <p className="mb-2"><strong>Name:</strong> {userData.name}</p>
+          </div>
+        </div>
+        <div className="flex flex-col items-center p-24">
+          <div className="max-w-8xl w-full bg-white p-6 rounded-sm shadow-sm">
+            <h2 className="text-xl font-semibold text-gray-900 mt-4">Listings</h2>
+            {listings.length > 0 ? (
+              <div className="flex flex-wrap justify-left">
+                {listings.map((listing) => (
+                  <div key={listing.job_id} className="max-w-md w-full bg-white p-6 m-4 rounded-lg shadow-md">
+                    <h2 className="text-xl font-semibold mb-2">{listing.title}</h2>
+                    <p><strong>Description:</strong> {listing.description}</p>
+                    <p><strong>Location:</strong> {listing.location}</p>
+                    <p><strong>Minimum Salary:</strong> {listing.min_salary}</p>
+                    <p><strong>Maximum Salary:</strong> {listing.max_salary}</p>
+                    <p><strong>Date Posted:</strong> {listing.date_posted}</p>
+                    <p><strong>Rate Type:</strong> {listing.rate_type}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+            <p>No listings found.</p>
+          )}
+      </div>
+    </div>
+    </>
+
+    
+  )
+}
 };
 
 export default Profile;
