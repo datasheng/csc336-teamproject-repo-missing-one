@@ -16,7 +16,7 @@ app.use(cors({
 // Mount routes
 app.use("/auth", authRoutes);
 app.use('/api/listings', listingsRouter);
-app.use(profileRouter);
+app.use('/profile', profileRouter);
 // Start the server
 const PORT = 3001;
 app.listen(PORT, () => {
