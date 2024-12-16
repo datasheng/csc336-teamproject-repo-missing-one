@@ -12,62 +12,61 @@ const Profile = ({ userId, userData }) => {
   const [education, setEducation] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [listings, setListings] = useState([]);
-  //console.log("User data: ", userData);
+
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchData = async () => {
+      setLoading(true);
       try {
-        const response = await fetch(`http://localhost:3001/profile/${userId}`);
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status} ${response.statusText}`);
+        if (userData.userType === "contractor") {
+          await Promise.all([
+            fetchProfile(),
+            fetchSkills()
+          ]);
+        } else if (userData.userType === "client") {
+          await fetchListings();
         }
-        const data = await response.json();
-        setUserProfile(data);
-        setBio(data.bio); // Set the initial bio
-        setPhoneNumber(data.phone_number); // Set the initial phone number
       } catch (error) {
         setError(error.message);
       } finally {
         setLoading(false);
-      }
-    };
-
-    const fetchSkills = async () => {
-      try {
-        const response = await fetch(`http://localhost:3001/profile/skills/${userId}`);
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status} ${response.statusText}`);
-        }
-        const data = await response.json();
-        setSkills(data.skills || "");
-        setExperience(data.experience || "");
-        setEducation(data.education || "");
-      } catch (error) {
-        setError(error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const fetchListings = async () => {
-      try {
-        const response = await fetch(`http://localhost:3001/profile/listings/${userId}`);
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status} ${response.statusText}`);
-        }
-        //console.log("Listings response:", response);
-        const data = await response.json();
-        setListings(data);
-      } catch (error) {
-        setError(error.message);
       }
     };
 
     if (userId) {
-      fetchProfile();
-      fetchSkills();
-      fetchListings();
+      fetchData();
     }
-  }, [userId]);
+  }, [userId, userData.userType]);
+
+  const fetchProfile = async () => {
+    const response = await fetch(`http://localhost:3001/profile/${userId}`);
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status} ${response.statusText}`);
+    }
+    const data = await response.json();
+    setUserProfile(data);
+    setBio(data.bio);
+    setPhoneNumber(data.phone_number);
+  };
+
+  const fetchSkills = async () => {
+    const response = await fetch(`http://localhost:3001/profile/skills/${userId}`);
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status} ${response.statusText}`);
+    }
+    const data = await response.json();
+    setSkills(data.skills || "");
+    setExperience(data.experience || "");
+    setEducation(data.education || "");
+  };
+
+  const fetchListings = async () => {
+    const response = await fetch(`http://localhost:3001/profile/listings/${userId}`);
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status} ${response.statusText}`);
+    }
+    const data = await response.json();
+    setListings(data);
+  };
 
   const handleBioChange = (e) => {
     setBio(e.target.value);
@@ -75,7 +74,7 @@ const Profile = ({ userId, userData }) => {
 
   const handlePhoneNumberChange = (e) => {
     const value = e.target.value;
-    if (/^\d*$/.test(value)) { // Only allow numeric input
+    if (/^\d*$/.test(value)) {
       setPhoneNumber(value);
     }
   };
@@ -108,7 +107,6 @@ const Profile = ({ userId, userData }) => {
       console.log("Updated profile:", updatedProfile);
       setUserProfile(updatedProfile);
 
-      // Update skills
       const skillsResponse = await fetch(`http://localhost:3001/profile/skills/${userId}`, {
         method: "PUT",
         headers: {
@@ -256,6 +254,7 @@ else {
                     <p><strong>Location:</strong> {listing.location}</p>
                     <p><strong>Minimum Salary:</strong> {listing.min_salary}</p>
                     <p><strong>Maximum Salary:</strong> {listing.max_salary}</p>
+                    <p><strong>Actual Salary:</strong> {listing.actual_salary}</p>
                     <p><strong>Date Posted:</strong> {listing.date_posted}</p>
                     <p><strong>Rate Type:</strong> {listing.rate_type}</p>
                   </div>
