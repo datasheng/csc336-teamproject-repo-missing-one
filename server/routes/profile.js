@@ -32,37 +32,54 @@ router.post("/create", (req, res) => {
 
 router.get("/:contractor_id", async (req, res) => {
     const { contractor_id } = req.params;
-    const query = `SELECT * FROM profile WHERE contractor_id = ?`;
-
-    db.execute(query, [contractor_id], async (err, results) => {
-        if (err) {
-            console.error("Database error:", err);
-            return res.status(500).json({ error: err.message });
+    
+    // First, verify that the contractor exists
+    const checkContractorQuery = `SELECT contractor_id FROM contractor WHERE contractor_id = ?`;
+    
+    db.execute(checkContractorQuery, [contractor_id], (checkErr, checkResults) => {
+        if (checkErr) {
+            console.error("Database error:", checkErr);
+            return res.status(500).json({ error: checkErr.message });
         }
 
-        if (results.length === 0) {
-            // Profile not found, create a default profile
-            const insertQuery = `INSERT INTO profile (contractor_id, bio, phone_number, role_status) VALUES (?, '', '1234567890', '')`;
-            db.execute(insertQuery, [contractor_id], (err, insertResults) => {
-                if (err) {
-                    console.error("Database error:", err);
-                    return res.status(500).json({ error: err.message });
-                }
-
-                const newProfile = {
-                    profile_id: insertResults.insertId,
-                    contractor_id: contractor_id,
-                    bio: '',
-                    phone_number: '',
-                    role_status: ''
-                };
-
-                res.status(201).json(newProfile);
-            });
-        } else {
-            const profile = results[0];
-            res.status(200).json(profile);
+        // If contractor doesn't exist, return error
+        if (checkResults.length === 0) {
+            return res.status(404).json({ error: "Contractor not found" });
         }
+
+        // If contractor exists, proceed with profile check/creation
+        const query = `SELECT * FROM profile WHERE contractor_id = ?`;
+
+        db.execute(query, [contractor_id], async (err, results) => {
+            if (err) {
+                console.error("Database error:", err);
+                return res.status(500).json({ error: err.message });
+            }
+
+            if (results.length === 0) {
+                // Profile not found, create a default profile
+                const insertQuery = `INSERT INTO profile (contractor_id, bio, phone_number, role_status) VALUES (?, '', '', '')`;
+                db.execute(insertQuery, [contractor_id], (err, insertResults) => {
+                    if (err) {
+                        console.error("Database error:", err);
+                        return res.status(500).json({ error: err.message });
+                    }
+
+                    const newProfile = {
+                        profile_id: insertResults.insertId,
+                        contractor_id: contractor_id,
+                        bio: '',
+                        phone_number: '',
+                        role_status: ''
+                    };
+
+                    res.status(201).json(newProfile);
+                });
+            } else {
+                const profile = results[0];
+                res.status(200).json(profile);
+            }
+        });
     });
 });
 router.put("/:contractor_id", async (req, res) => {
@@ -202,13 +219,12 @@ router.get('/listings/:userId', (req, res) => {
     }
     const formattedResults = results.map(job => ({
       ...job,
-      date_posted: new Date(parseInt(job.date_posted)).toLocaleDateString('en-US', {
+      date_posted: new Date(job.date_posted).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
       })
     }));
-
 
     res.status(200).json(formattedResults);
   });
