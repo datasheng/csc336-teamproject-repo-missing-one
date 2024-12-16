@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import Premium from './Premium';
 
 const Profile = ({ userId, userData }) => {
   const [userProfile, setUserProfile] = useState(null);
@@ -139,6 +140,7 @@ const Profile = ({ userId, userData }) => {
         <h1 className="text-2xl font-bold mb-4">Profile</h1>
         <p className="mb-2"><strong>Email:</strong> {userData.email}</p>
         <p className="mb-2"><strong>Name:</strong> {userData.name}</p>
+        <Premium contractorId={userId} />
         <div className="my-4">
           <label htmlFor="bio"><strong>Bio:</strong></label>
           {isEditing ? (

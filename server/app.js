@@ -4,6 +4,7 @@ const authRoutes = require("./routes/auth");
 const cors = require('cors');
 const listingsRouter = require('./routes/listings');
 const profileRouter = require('./routes/profile');
+const premiumRouter = require('./routes/premium');
 const app = express();
 
 app.use(express.json()); // For parsing JSON requests
@@ -17,6 +18,7 @@ app.use(cors({
 app.use("/auth", authRoutes);
 app.use('/api/listings', listingsRouter);
 app.use('/profile', profileRouter);
+app.use('/api/premium', premiumRouter);
 // Start the server
 const PORT = 3001;
 app.listen(PORT, () => {
