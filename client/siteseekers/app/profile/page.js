@@ -6,13 +6,36 @@ import Profile from "../components/Profile";
 
 export default function ProfilePage() {
   const [userData, setUserData] = useState(null);
-
+  const [clientData, setClientData] = useState(null);
+  //console.log("User data:", userData);
   useEffect(() => {
     const storedUserData = localStorage.getItem("userData");
     if (storedUserData) {
+      const parsedUserData = JSON.parse(storedUserData);
       setUserData(JSON.parse(storedUserData));
+
+      if (parsedUserData.userType === "client") {
+        getClientData(parsedUserData.id);
+      }
     }
+
+    
   }, []);
+
+  const getClientData = async (userId) => {
+    try {
+      const response = await fetch(`http://localhost:3001/profile/client/${userId}`);
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status} ${response.statusText}`);
+      }
+      const data = await response.json();
+      //console.log("Client data:", data);
+      setClientData(data);
+    } catch (error) {
+      console.error("Error fetching user client data:", error);
+    }
+  
+  };
 
   return (
     <div>
@@ -25,7 +48,7 @@ export default function ProfilePage() {
             {userData ? (
               <>
                 {userData.userType === "client" ? (
-                  <Profile userId={userData.id} userData={userData} />
+                  <Profile userId={userData.id} userData={userData} initialClientData={clientData} />
                 ) : userData.userType === "contractor" ? (
                   <Profile userId={userData.id} userData={userData} />
                 ) : (

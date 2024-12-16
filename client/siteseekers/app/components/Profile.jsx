@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 
-const Profile = ({ userId, userData }) => {
+const Profile = ({ userId, userData, initialClientData }) => {
+  //console.log("User data:", initialClientData);
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [bio, setBio] = useState("");
@@ -10,6 +11,11 @@ const Profile = ({ userId, userData }) => {
   const [experience, setExperience] = useState("");
   const [education, setEducation] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const [isEditingClient, setIsEditingClient] = useState(false);
+  const [clientData, setClientData] = useState(initialClientData || null);
+  const [company, setCompany] = useState(initialClientData ? initialClientData.company : "");
+  const [location, setLocation] = useState(initialClientData ? initialClientData.location : "");
+  const [isHiring, setIsHiring] = useState(initialClientData ? initialClientData.isHiring : "");
   const [listings, setListings] = useState([]);
   //console.log("User data: ", userData);
   useEffect(() => {
@@ -61,10 +67,29 @@ const Profile = ({ userId, userData }) => {
       }
     };
 
+    const fetchClient = async () => {
+      try {
+        const response = await fetch(`http://localhost:3001/profile/client/${userId}`);
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status} ${response.statusText}`);
+        }
+        //console.log("Listings response:", response);
+        const data = await response.json();
+        setClientData(data);
+        setCompany(data.company);
+        setLocation(data.location);
+        setIsHiring(data.isHiring);
+      } catch (error) {
+        setError(error.message);
+      }
+    };
+    
+
     if (userId) {
       fetchProfile();
       fetchSkills();
       fetchListings();
+      fetchClient();
     }
   }, [userId]);
 
@@ -90,6 +115,16 @@ const Profile = ({ userId, userData }) => {
   const handleEducationChange = (e) => {
     setEducation(e.target.value);
   };
+  const handleCompanyChange = (e) => {
+    setCompany(e.target.value);
+  };
+  const handleLocationChange = (e) => {
+    setLocation(e.target.value);
+  };
+  const handleHiringChange = (e) => {
+    setIsHiring(e.target.value);
+  };
+  
 
   const handleSaveProfile = async () => {
     try {
@@ -129,6 +164,31 @@ const Profile = ({ userId, userData }) => {
       setError(error.message);
     }
   };
+
+  const handleSaveClient = async () => {
+    try {
+      const response = await fetch(`http://localhost:3001/profile/client/${userId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ company, location, isHiring }),
+      });
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status} ${response.statusText}`);
+      }
+      const updatedClientData = await response.json();
+      console.log("Updated client data:", updatedClientData);
+      setClientData(updatedClientData);
+      setCompany(updatedClientData.company);
+      setLocation(updatedClientData.location);
+      setIsHiring(updatedClientData.isHiring);
+      setIsEditingClient(false);
+    } catch (error) {
+      console.error("Error updating client data:", error);
+    }
+  };
+
 
   if (loading) return <p>Loading profile data...</p>;
   if (error) return <p>Error loading profile: {error}</p>;
@@ -232,6 +292,8 @@ const Profile = ({ userId, userData }) => {
   );
 }
 
+
+
 else {
   return (
     <>
@@ -240,6 +302,66 @@ else {
         <h1 className="text-2xl font-bold mb-4">Profile</h1>
         <p className="mb-2"><strong>Email:</strong> {userData.email}</p>
         <p className="mb-2"><strong>Name:</strong> {userData.name}</p>
+          {isEditingClient ? (
+            <>
+              <p className="mb-2"><strong>Company:</strong></p>
+              <textarea
+                id="company"
+                type="text"
+                placeholder="Enter your company"
+                value={company}
+                onChange={handleCompanyChange}
+                className="w-full p-2 mt-2 border rounded"
+              />
+            </>
+          ) : (
+            <p className="mb-2"><strong>Company:</strong> {company}</p>
+          )}
+
+          {isEditingClient ? (
+            <>
+              <p className="mb-2"><strong>Location:</strong></p>
+              <textarea
+                id="location"
+                type="text"
+                placeholder="Enter your location"
+                value={location}
+                onChange={handleLocationChange}
+                className="w-full p-2 mt-2 border rounded"
+              />
+            </>
+          ) : (
+            <p className="mb-2"><strong>Location:</strong> {location}</p>
+          )}
+        
+        {isEditingClient ? (
+            <>
+              <p className="mb-2"><strong>Status:</strong></p>
+              <textarea
+                id="isHiring"
+                type="text"
+                placeholder="Enter your hiring status"
+                value={isHiring}
+                onChange={handleHiringChange}
+                className="w-full p-2 mt-2 border rounded"
+              />
+            </>
+          ) : (
+            <p className="mb-2"><strong>Status: </strong>{isHiring}</p>
+          )}
+        {isEditingClient ? (
+          <button
+            onClick={handleSaveClient}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
+          >
+            Save Profile
+          </button>
+        ) : (
+        <button className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
+                onClick={() => setIsEditingClient(true)}>
+          Edit Profile
+        </button>
+        )}
           </div>
         </div>
         <div className="flex flex-col items-center p-24">
@@ -258,6 +380,7 @@ else {
                     <p><strong>Rate Type:</strong> {listing.rate_type}</p>
                   </div>
                 ))}
+                
               </div>
             ) : (
             <p>No listings found.</p>

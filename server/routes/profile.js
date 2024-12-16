@@ -215,4 +215,56 @@ router.get('/listings/:userId', (req, res) => {
 });
 
 
+router.get("/client/:client_id", async (req, res) => {
+    const { client_id } = req.params;
+    const query = `SELECT * FROM client WHERE client_id = ?`;
+
+    db.execute(query, [client_id], async (err, results) => {
+        if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({ error: err.message });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ error: "Client not found" });
+            
+        } else {
+            const client = results[0];
+            res.status(200).json(client);
+        }
+    });
+});
+
+router.put("/client/:client_id", async (req, res) => {
+    const { client_id } = req.params;
+    const { company, location, isHiring } = req.body;
+
+    const query = `
+      UPDATE client
+      SET company = ?, location = ?, isHiring = ?
+      WHERE client_id = ?
+    `;
+
+    db.execute(query, [company, location, isHiring, client_id], (err, results) => {
+        if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({ error: err.message });
+        }
+
+        if (results.affectedRows === 0) {
+            return res.status(404).json({ error: "Client not found" });
+        }
+
+        db.execute(`SELECT * FROM client WHERE client_id = ?`, [client_id], (err, results) => {
+            if (err) {
+                console.error("Database error:", err);
+                return res.status(500).json({ error: err.message });
+            }
+
+            const updatedClient = results[0];
+            res.status(200).json(updatedClient);
+        });
+    });
+});
+
 module.exports = router;
