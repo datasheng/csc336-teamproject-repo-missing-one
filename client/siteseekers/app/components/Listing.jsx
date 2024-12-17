@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from "react";
-
+import Modal from "./Modal";
 export default function Listing() {
   const [jobListings, setJobListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [userType, setUserType] = useState(null);
-
+  const [showModal, setShowModal] = useState(false);
+  const [selectedJobId, setSelectedJobId] = useState(null);
+  const [userData, setUserData] = useState(null);
   useEffect(() => {
+    const storedUserData = localStorage.getItem("userData");
+    if (storedUserData) {
+      setUserData(JSON.parse(storedUserData));
+    }
     const fetchListings = async () => {
       try {
         const response = await fetch('http://localhost:3001/api/listings');
@@ -26,12 +32,29 @@ export default function Listing() {
     fetchListings();
 
     // Get user type from localStorage
-    const storedUserData = localStorage.getItem("userData");
     if (storedUserData) {
       const parsedData = JSON.parse(storedUserData);
       setUserType(parsedData.userType);
     }
   }, []);
+
+  const handleApply = (jobId) => {
+    setSelectedJobId(jobId);
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSelectedJobId(null);
+  };
+
+  const handleSubmitApplication = (answers) => {
+    //console.log("Application submitted for job ID:", selectedJobId);
+    //console.log("Answers:", answers);
+    // Perform any necessary actions, such as making an API call to submit the application
+    setShowModal(false);
+    setSelectedJobId(null);
+  };
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
@@ -66,6 +89,15 @@ export default function Listing() {
           </div>
         ))}
       </div>
+      {selectedJobId && (
+        <Modal
+          show={showModal}
+          onClose={handleCloseModal}
+          onSubmit={handleSubmitApplication}
+          jobId={selectedJobId}
+          contractor_id={userData.id}
+        />
+      )}
     </div>
   );
 }
