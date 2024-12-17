@@ -106,20 +106,33 @@ router.post("/check-application", async (req, res) => {
 
 router.post("/apply", async (req, res) => {
   const { contractor_id, job_id, tell_answer, fit_answer, ambitious_answer, location } = req.body;
-  const application_date = new Date().toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
   const date_applied = Date.now();
   const status = "Pending";
 
   const query = `
-    INSERT INTO job_application (contractor_id, job_id, application_date, date_applied, status, tell_answer, fit_answer, ambitious_answer, location)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO job_application (
+      contractor_id, 
+      job_id, 
+      date_applied, 
+      status, 
+      tell_answer, 
+      fit_answer, 
+      ambitious_answer, 
+      location
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
-  db.query(query, [contractor_id, job_id, application_date, date_applied, status, tell_answer, fit_answer, ambitious_answer, location], (err, results) => {
+  db.query(query, [
+    contractor_id, 
+    job_id, 
+    date_applied, 
+    status, 
+    tell_answer, 
+    fit_answer, 
+    ambitious_answer, 
+    location
+  ], (err, results) => {
     if (err) {
       console.error("Database error:", err);
       return res.status(500).json({ error: "Error submitting job application" });
