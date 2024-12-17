@@ -58,7 +58,14 @@ router.get("/:contractor_id", async (req, res) => {
 
             if (results.length === 0) {
                 // Profile not found, create a default profile
-                const insertQuery = `INSERT INTO profile (contractor_id, bio, phone_number, role_status) VALUES (?, '', '', '')`;
+                const insertQuery = `
+                    INSERT INTO profile (
+                        contractor_id, 
+                        bio, 
+                        phone_number, 
+                        role_status
+                    ) VALUES (?, '', NULL, 'Looking for Work')`;
+                    
                 db.execute(insertQuery, [contractor_id], (err, insertResults) => {
                     if (err) {
                         console.error("Database error:", err);
@@ -69,8 +76,8 @@ router.get("/:contractor_id", async (req, res) => {
                         profile_id: insertResults.insertId,
                         contractor_id: contractor_id,
                         bio: '',
-                        phone_number: '',
-                        role_status: ''
+                        phone_number: null,
+                        role_status: 'Looking for Work'
                     };
 
                     res.status(201).json(newProfile);
@@ -88,11 +95,13 @@ router.put("/:contractor_id", async (req, res) => {
 
   const query = `
     UPDATE profile
-    SET bio = ?, phone_number = ?, role_status = ?
+    SET bio = ?, 
+        phone_number = ?, 
+        role_status = ?
     WHERE contractor_id = ?
   `;
 
-  db.execute(query, [bio, phone_number, "", contractor_id], (err, results) => {
+  db.execute(query, [bio, phone_number, role_status, contractor_id], (err, results) => {
     if (err) {
       console.error("Error updating profile:", err);
       return res.status(500).json({ error: "Database error" });
