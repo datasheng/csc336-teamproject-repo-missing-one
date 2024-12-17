@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import Premium from './Premium';
 import Link from "next/link";
+import SkillsSection from './SkillsSection';
+import ExperienceSection from './ExperienceSection';
+import EducationSection from './EducationSection';
 
 const Profile = ({ userId, userData, initialClientData }) => {
 
@@ -11,8 +14,8 @@ const Profile = ({ userId, userData, initialClientData }) => {
   const [bio, setBio] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [error, setError] = useState(null);
-  const [skills, setSkills] = useState("");
-  const [experience, setExperience] = useState("");
+  const [skills, setSkills] = useState([]);
+  const [experiences, setExperiences] = useState([]);
   const [education, setEducation] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [isEditingClient, setIsEditingClient] = useState(false);
@@ -22,16 +25,31 @@ const Profile = ({ userId, userData, initialClientData }) => {
   const [isHiring, setIsHiring] = useState(initialClientData ? initialClientData.isHiring : "");
   const [listings, setListings] = useState([]);
   const [roleStatus, setRoleStatus] = useState("");
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
         if (userData.userType === "contractor") {
-          await Promise.all([
-            fetchProfile(),
-            fetchSkills()
+          const [profileData, skillsData, experiencesResponse] = await Promise.all([
+            fetch(`http://localhost:3001/profile/${userId}`),
+            fetch(`http://localhost:3001/profile/skills/${userId}`),
+            fetch(`http://localhost:3001/profile/experiences/${userId}`)
           ]);
+
+          const profileJson = await profileData.json();
+          setUserProfile(profileJson);
+          setBio(profileJson.bio);
+          setPhoneNumber(profileJson.phone_number);
+          setRoleStatus(profileJson.role_status);
+          
+          const skillsJson = await skillsData.json();
+          setSkills(skillsJson.skills || []);
+          setEducation(skillsJson.education || "");
+
+          const experiencesJson = await experiencesResponse.json();
+          setExperiences(experiencesJson.experiences || []);
         } else if (userData.userType === "client") {
           await Promise.all([
             fetchListings(),
@@ -61,17 +79,22 @@ const Profile = ({ userId, userData, initialClientData }) => {
     setBio(data.bio);
     setPhoneNumber(data.phone_number);
     setRoleStatus(data.role_status);
+    setEducation(data.education || '');
   };
 
   const fetchSkills = async () => {
-    const response = await fetch(`http://localhost:3001/profile/skills/${userId}`);
-    if (!response.ok) {
-      throw new Error(`Error: ${response.status} ${response.statusText}`);
+    try {
+      const response = await fetch(`http://localhost:3001/profile/skills/${userId}`);
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status} ${response.statusText}`);
+      }
+      const data = await response.json();
+      setSkills(data.skills || []);
+      setEducation(data.education || "");
+    } catch (error) {
+      console.error("Error fetching skills:", error);
+      setError(error.message);
     }
-    const data = await response.json();
-    setSkills(data.skills || "");
-    setExperience(data.experience || "");
-    setEducation(data.education || "");
   };
 
   const fetchListings = async () => {
@@ -100,6 +123,18 @@ const Profile = ({ userId, userData, initialClientData }) => {
       }
     };
 
+  const fetchExperiences = async () => {
+    try {
+      const response = await fetch(`http://localhost:3001/profile/experiences/${userId}`);
+      if (!response.ok) throw new Error('Failed to fetch experiences');
+      const data = await response.json();
+      setExperiences(data.experiences || []);
+    } catch (error) {
+      console.error("Error fetching experiences:", error);
+      setError(error.message);
+    }
+  };
+
   const handleBioChange = (e) => {
     setBio(e.target.value);
   };
@@ -111,17 +146,42 @@ const Profile = ({ userId, userData, initialClientData }) => {
     }
   };
 
-  const handleSkillsChange = (e) => {
-    setSkills(e.target.value);
+  const handleAddSkill = () => {
+    setSkills([...skills, '']);
   };
 
-  const handleExperienceChange = (e) => {
-    setExperience(e.target.value);
+  const handleSkillChange = (index, value) => {
+    const newSkills = [...skills];
+    newSkills[index] = value;
+    setSkills(newSkills);
   };
 
-  const handleEducationChange = (e) => {
-    setEducation(e.target.value);
+  const handleRemoveSkill = (index) => {
+    const newSkills = skills.filter((_, i) => i !== index);
+    setSkills(newSkills);
   };
+
+  const handleAddExperience = () => {
+    setExperiences([...experiences, {
+      company_name: "",
+      role_title: "",
+      start_date: "",
+      end_date: "",
+      description: ""
+    }]);
+  };
+
+  const handleExperienceChange = (index, field, value) => {
+    const newExperiences = [...experiences];
+    newExperiences[index][field] = value;
+    setExperiences(newExperiences);
+  };
+
+  const handleRemoveExperience = (index) => {
+    const newExperiences = experiences.filter((_, i) => i !== index);
+    setExperiences(newExperiences);
+  };
+
   const handleCompanyChange = (e) => {
     setCompany(e.target.value);
   };
@@ -138,43 +198,28 @@ const Profile = ({ userId, userData, initialClientData }) => {
 
   const handleSaveProfile = async () => {
     try {
+      const profileData = {
+        bio: bio || '',
+        phone_number: phoneNumber || null,
+        role_status: roleStatus || 'Looking for Work'
+      };
+      
       const response = await fetch(`http://localhost:3001/profile/${userId}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ 
-          bio, 
-          phone_number: phoneNumber,
-          role_status: roleStatus
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(profileData),
       });
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status} ${response.statusText}`);
-      }
-      const updatedProfile = await response.json();
-      console.log("Updated profile:", updatedProfile);
-      setUserProfile(updatedProfile);
 
-      const skillsResponse = await fetch(`http://localhost:3001/profile/skills/${userId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ skills, experience, education }),
-      });
-      if (!skillsResponse.ok) {
-        throw new Error(`Error: ${skillsResponse.status} ${skillsResponse.statusText}`);
+      if (!response.ok) {
+        throw new Error('Failed to update profile');
       }
-      const updatedSkills = await skillsResponse.json();
-      console.log("Updated skills:", updatedSkills);
-      setSkills(updatedSkills.skills);
-      setExperience(updatedSkills.experience);
-      setEducation(updatedSkills.education);
-      
-      setIsEditing(false);
+
+      await fetchProfile();
+      setIsEditingProfile(false);
+      alert('Profile updated successfully!');
     } catch (error) {
-      setError(error.message);
+      console.error("Error saving profile:", error);
+      alert('Failed to save profile: ' + error.message);
     }
   };
 
@@ -202,6 +247,9 @@ const Profile = ({ userId, userData, initialClientData }) => {
     }
   };
 
+  const handleEducationChange = (e) => {
+    setEducation(e.target.value);
+  };
 
   if (loading) return <p>Loading profile data...</p>;
   if (error) return <p>Error loading profile: {error}</p>;
@@ -213,9 +261,10 @@ const Profile = ({ userId, userData, initialClientData }) => {
         <p className="mb-2"><strong>Email:</strong> {userData.email}</p>
         <p className="mb-2"><strong>Name:</strong> {userData.name}</p>
         <Premium contractorId={userId} />
+        
         <div className="my-4">
           <label htmlFor="bio"><strong>Bio:</strong></label>
-          {isEditing ? (
+          {isEditingProfile ? (
             <textarea
               id="bio"
               value={bio}
@@ -226,9 +275,10 @@ const Profile = ({ userId, userData, initialClientData }) => {
             <p>{bio}</p>
           )}
         </div>
-        <div className="my-4"> 
+
+        <div className="my-4">
           <label htmlFor="phone_number"><strong>Phone Number:</strong></label>
-          {isEditing ? (
+          {isEditingProfile ? (
             <input
               id="phone_number"
               type="tel"
@@ -241,54 +291,10 @@ const Profile = ({ userId, userData, initialClientData }) => {
             <p>{phoneNumber}</p>
           )}
         </div>
-        <div className="my-4">
-          <label htmlFor="skills"><strong>Skills:</strong></label>
-          {isEditing ? (
-            <textarea
-              id="skills"
-              type="text"
-              placeholder="Enter your skills"
-              value={skills}
-              onChange={handleSkillsChange}
-              className="w-full p-2 mt-2 border rounded"
-            />
-          ) : (
-            <p>{skills}</p>
-          )}
-        </div>
-        <div className="my-4">
-          <label htmlFor="experience"><strong>Experience:</strong></label>
-          {isEditing ? (
-            <textarea
-              id="experience"
-              type="text"
-              placeholder="Enter your experience"
-              value={experience}
-              onChange={handleExperienceChange}
-              className="w-full p-2 mt-2 border rounded"
-            />
-          ) : (
-            <p>{experience}</p>
-          )}
-        </div>
-        <div className="my-4">
-          <label htmlFor="education"><strong>Education:</strong></label>
-          {isEditing ? (
-            <textarea
-              id="education"
-              type="text"
-              placeholder="Enter your education"
-              value={education}
-              onChange={handleEducationChange}
-              className="w-full p-2 mt-2 border rounded"
-            />
-          ) : (
-            <p>{education}</p>
-          )}
-        </div>
+
         <div className="my-4">
           <label htmlFor="role_status"><strong>Role Status:</strong></label>
-          {isEditing ? (
+          {isEditingProfile ? (
             <select
               id="role_status"
               value={roleStatus}
@@ -302,7 +308,8 @@ const Profile = ({ userId, userData, initialClientData }) => {
             <p>{roleStatus}</p>
           )}
         </div>
-        {isEditing ? (
+
+        {isEditingProfile ? (
           <button
             onClick={handleSaveProfile}
             className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
@@ -311,13 +318,35 @@ const Profile = ({ userId, userData, initialClientData }) => {
           </button>
         ) : (
           <button
-            onClick={() => setIsEditing(true)}
+            onClick={() => setIsEditingProfile(true)}
             className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
           >
             Edit Profile
           </button>
         )}
-    </div>
+
+        <EducationSection 
+          userId={userId}
+          education={education}
+          setEducation={setEducation}
+        />
+
+        <SkillsSection 
+          userId={userId}
+          skills={skills}
+          education={education}
+          setSkills={setSkills}
+          setEducation={setEducation}
+          fetchSkills={fetchSkills}
+        />
+
+        <ExperienceSection 
+          userId={userId}
+          experiences={experiences}
+          setExperiences={setExperiences}
+          fetchExperiences={fetchExperiences}
+        />
+      </div>
     </div>
   );
 }
