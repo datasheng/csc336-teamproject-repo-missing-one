@@ -181,5 +181,36 @@ router.post("/", (req, res) => {
   });
 });
 
+router.get("/applied-jobs/:contractor_id", async (req, res) => {
+  const { contractor_id } = req.params;
+  const query = `
+    SELECT job.*, job_application.status AS application_status FROM job_application
+    JOIN job ON job_application.job_id = job.job_id
+    WHERE job_application.contractor_id = ?
+  `;
+
+  db.query(query, [contractor_id], (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Error fetching applied jobs" });
+    }
+
+    const formattedResults = results.map(job => ({
+      ...job,
+      date_posted: new Date(job.date_posted).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }),
+      min_salary: parseFloat(job.min_salary).toLocaleString('en-US', { minimumFractionDigits: 2 }),
+      max_salary: parseFloat(job.max_salary).toLocaleString('en-US', { minimumFractionDigits: 2 }),
+      actual_salary: parseFloat(job.actual_salary).toLocaleString('en-US', { minimumFractionDigits: 2 }),
+      application_status: job.application_status
+    }));
+
+    res.json(formattedResults);
+  });
+});
+
 
 module.exports = router;
