@@ -33,9 +33,13 @@ const Profile = ({ userId, userData, initialClientData }) => {
             fetchSkills()
           ]);
         } else if (userData.userType === "client") {
-          await fetchListings();
+          await Promise.all([
+            fetchListings(),
+            fetchClient()
+          ]);
         }
       } catch (error) {
+        console.error("Fetch error:", error);
         setError(error.message);
       } finally {
         setLoading(false);
@@ -44,7 +48,6 @@ const Profile = ({ userId, userData, initialClientData }) => {
 
     if (userId) {
       fetchData();
-      fetchClient();
     }
   }, [userId, userData.userType]);
 

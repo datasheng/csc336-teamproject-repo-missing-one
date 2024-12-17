@@ -50,7 +50,7 @@ router.get("/:contractor_id", async (req, res) => {
         // If contractor exists, proceed with profile check/creation
         const query = `SELECT * FROM profile WHERE contractor_id = ?`;
 
-        db.execute(query, [contractor_id], async (err, results) => {
+        db.execute(query, [contractor_id], (err, results) => {
             if (err) {
                 console.error("Database error:", err);
                 return res.status(500).json({ error: err.message });
@@ -66,12 +66,13 @@ router.get("/:contractor_id", async (req, res) => {
                         role_status
                     ) VALUES (?, '', NULL, 'Looking for Work')`;
                     
-                db.execute(insertQuery, [contractor_id], (err, insertResults) => {
-                    if (err) {
-                        console.error("Database error:", err);
-                        return res.status(500).json({ error: err.message });
+                db.execute(insertQuery, [contractor_id], (insertErr, insertResults) => {
+                    if (insertErr) {
+                        console.error("Database error:", insertErr);
+                        return res.status(500).json({ error: insertErr.message });
                     }
 
+                    // After creating profile, return it immediately
                     const newProfile = {
                         profile_id: insertResults.insertId,
                         contractor_id: contractor_id,
