@@ -1,9 +1,10 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 const ListingsForm = () => {
   const router = useRouter();
+  const [clientId, setClientId] = useState(null);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -11,9 +12,23 @@ const ListingsForm = () => {
     min_salary: "",
     max_salary: "",
     actual_salary: "",
-    rate_type: "hourly", // Defaults to hourly
-    status: "open", // Default status
+    rate_type: "hourly",
+    status: "open",
   });
+
+  useEffect(() => {
+    const storedUserData = localStorage.getItem("userData");
+    if (storedUserData) {
+      const parsedData = JSON.parse(storedUserData);
+      if (parsedData.userType !== 'client') {
+        router.push('/');
+        return;
+      }
+      setClientId(parsedData.id);
+    } else {
+      router.push('/login');
+    }
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -26,30 +41,34 @@ const ListingsForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!clientId) {
+      alert("You must be logged in as a client to post jobs");
+      return;
+    }
+
     try {
       const payload = {
         ...formData,
-        date_posted: Date.now(), // Default current timestamp
+        client_id: clientId,
       };
-/* Was trying to figure this part out last
-      const response = await fetch("http://localhost:3001", {
+
+      const response = await fetch("http://localhost:3001/api/listings", {
         method: "POST",
         headers: {
-          "Content-Type": "",
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
-      });*/
+      });
 
       const data = await response.json();
 
       if (response.ok) {
         alert("Job listing created successfully!");
-        router.push("/profile"); // Redirects to profile page after submission
+        router.push("/profile");
       } else {
         throw new Error(data.message || "Error creating job listing");
       }
     } catch (error) {
-      console.error("Job creation error:", error);
       alert(error.message);
     }
   };
@@ -134,6 +153,7 @@ const ListingsForm = () => {
               required
             >
               <option value="hourly">Hourly</option>
+              <option value="yearly">Yearly</option>
               <option value="fixed">Fixed</option>
             </select>
           </div>
