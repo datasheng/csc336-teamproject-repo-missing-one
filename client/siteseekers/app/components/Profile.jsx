@@ -22,7 +22,7 @@ const Profile = ({ userId, userData, initialClientData }) => {
   const [isHiring, setIsHiring] = useState(initialClientData ? initialClientData.isHiring : "");
   const [listings, setListings] = useState([]);
   const [roleStatus, setRoleStatus] = useState("");
-
+  const [appliedJobs, setAppliedJobs] = useState([]);   
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -30,12 +30,14 @@ const Profile = ({ userId, userData, initialClientData }) => {
         if (userData.userType === "contractor") {
           await Promise.all([
             fetchProfile(),
-            fetchSkills()
+            fetchSkills(),
+            fetchAppliedJobs()
           ]);
         } else if (userData.userType === "client") {
           await Promise.all([
             fetchListings(),
             fetchClient()
+            
           ]);
         }
       } catch (error) {
@@ -50,6 +52,21 @@ const Profile = ({ userId, userData, initialClientData }) => {
       fetchData();
     }
   }, [userId, userData.userType]);
+
+  const fetchAppliedJobs = async () => {
+    try {
+      const response = await fetch(`http://localhost:3001/api/listings/applied-jobs/${userId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch applied jobs');
+      }
+      const data = await response.json();
+      //console.log("Applied jobs:", data);
+      setAppliedJobs(data);
+    } catch (err) {
+      console.error('Error fetching applied jobs:', err);
+      setError('Failed to load applied jobs');
+    }
+  };
 
   const fetchProfile = async () => {
     const response = await fetch(`http://localhost:3001/profile/${userId}`);
@@ -153,7 +170,7 @@ const Profile = ({ userId, userData, initialClientData }) => {
         throw new Error(`Error: ${response.status} ${response.statusText}`);
       }
       const updatedProfile = await response.json();
-      console.log("Updated profile:", updatedProfile);
+      //console.log("Updated profile:", updatedProfile);
       setUserProfile(updatedProfile);
 
       const skillsResponse = await fetch(`http://localhost:3001/profile/skills/${userId}`, {
@@ -167,7 +184,7 @@ const Profile = ({ userId, userData, initialClientData }) => {
         throw new Error(`Error: ${skillsResponse.status} ${skillsResponse.statusText}`);
       }
       const updatedSkills = await skillsResponse.json();
-      console.log("Updated skills:", updatedSkills);
+      //("Updated skills:", updatedSkills);
       setSkills(updatedSkills.skills);
       setExperience(updatedSkills.experience);
       setEducation(updatedSkills.education);
@@ -191,7 +208,7 @@ const Profile = ({ userId, userData, initialClientData }) => {
         throw new Error(`Error: ${response.status} ${response.statusText}`);
       }
       const updatedClientData = await response.json();
-      console.log("Updated client data:", updatedClientData);
+      //console.log("Updated client data:", updatedClientData);
       setClientData(updatedClientData);
       setCompany(updatedClientData.company);
       setLocation(updatedClientData.location);
@@ -205,8 +222,13 @@ const Profile = ({ userId, userData, initialClientData }) => {
 
   if (loading) return <p>Loading profile data...</p>;
   if (error) return <p>Error loading profile: {error}</p>;
+
+
   if (userData.userType === "contractor") {
+
+
   return (
+    <>
     <div className="flex min-h-screen flex-col items-center p-24">
       <div className="max-w-md w-full bg-white p-6 rounded-lg shadow-md">
         <h1 className="text-2xl font-bold mb-4">Profile</h1>
@@ -319,6 +341,31 @@ const Profile = ({ userId, userData, initialClientData }) => {
         )}
     </div>
     </div>
+
+    <div className="flex flex-col items-center p-24">
+          <div className="max-w-8xl w-full bg-white p-6 rounded-sm shadow-sm">
+            <h2 className="text-xl font-semibold text-gray-900 mt-4">Jobs You Applied</h2>
+            
+            {appliedJobs.length > 0 ? (
+              <div className="flex flex-wrap justify-left">
+                {appliedJobs.map((job) => (
+                  <div key={job.job_id} className="max-w-md w-full bg-white p-6 m-4 rounded-lg shadow-md">
+                    <h3 className="text-xl font-semibold text-gray-800">{job.title}</h3>
+                    <p className="text-gray-600">{job.description}</p>
+                    <p className="text-gray-500">Location: {job.location}</p>
+                    <p className="text-gray-500">Posted: {job.date_posted}</p>
+                    <p className="text-gray-500">Status: {job.status}</p>
+                    <p className="text-gray-500">Salary: ${job.min_salary} - ${job.max_salary}</p>
+                    </div>
+                ))}
+                
+              </div>
+            ) : (
+            <p>No listings found.</p>
+          )}
+      </div>
+    </div>
+    </>
   );
 }
 

@@ -35,9 +35,9 @@ const Modal = ({ show, onClose, onSubmit, jobId, contractor_id }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!userData || userData.user_type !== "contractor") {
-      alert("You must be logged in as a contractor to apply for this job.");
+    //console.log("user data", userData);
+    if (!userData || userData.userType !== "contractor") {
+      alert("You must be logged in and also be a contractor to apply for this job.");
       return;
     }
 
