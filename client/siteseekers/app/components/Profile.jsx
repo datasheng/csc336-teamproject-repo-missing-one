@@ -37,31 +37,13 @@ const Profile = ({ userId, userData, initialClientData }) => {
           await Promise.all([
             fetchProfile(),
             fetchSkills(),
+            fetchExperiences(),
             fetchAppliedJobs()
-
-          const [profileData, skillsData, experiencesResponse] = await Promise.all([
-            fetch(`http://localhost:3001/profile/${userId}`),
-            fetch(`http://localhost:3001/profile/skills/${userId}`),
-            fetch(`http://localhost:3001/profile/experiences/${userId}`)
           ]);
-
-          const profileJson = await profileData.json();
-          setUserProfile(profileJson);
-          setBio(profileJson.bio);
-          setPhoneNumber(profileJson.phone_number);
-          setRoleStatus(profileJson.role_status);
-          
-          const skillsJson = await skillsData.json();
-          setSkills(skillsJson.skills || []);
-          setEducation(skillsJson.education || "");
-
-          const experiencesJson = await experiencesResponse.json();
-          setExperiences(experiencesJson.experiences || []);
         } else if (userData.userType === "client") {
           await Promise.all([
             fetchListings(),
             fetchClient()
-            
           ]);
         }
       } catch (error) {
