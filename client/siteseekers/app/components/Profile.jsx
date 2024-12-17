@@ -21,6 +21,7 @@ const Profile = ({ userId, userData, initialClientData }) => {
   const [location, setLocation] = useState(initialClientData ? initialClientData.location : "");
   const [isHiring, setIsHiring] = useState(initialClientData ? initialClientData.isHiring : "");
   const [listings, setListings] = useState([]);
+  const [roleStatus, setRoleStatus] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -56,6 +57,7 @@ const Profile = ({ userId, userData, initialClientData }) => {
     setUserProfile(data);
     setBio(data.bio);
     setPhoneNumber(data.phone_number);
+    setRoleStatus(data.role_status);
   };
 
   const fetchSkills = async () => {
@@ -126,6 +128,9 @@ const Profile = ({ userId, userData, initialClientData }) => {
   const handleHiringChange = (e) => {
     setIsHiring(e.target.value);
   };
+  const handleRoleStatusChange = (e) => {
+    setRoleStatus(e.target.value);
+  };
   
 
   const handleSaveProfile = async () => {
@@ -135,7 +140,11 @@ const Profile = ({ userId, userData, initialClientData }) => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ bio, phone_number: phoneNumber }),
+        body: JSON.stringify({ 
+          bio, 
+          phone_number: phoneNumber,
+          role_status: roleStatus
+        }),
       });
       if (!response.ok) {
         throw new Error(`Error: ${response.status} ${response.statusText}`);
@@ -230,7 +239,7 @@ const Profile = ({ userId, userData, initialClientData }) => {
           )}
         </div>
         <div className="my-4">
-          <label htmlFor="skills"><strong>Skills</strong></label>
+          <label htmlFor="skills"><strong>Skills:</strong></label>
           {isEditing ? (
             <textarea
               id="skills"
@@ -245,7 +254,7 @@ const Profile = ({ userId, userData, initialClientData }) => {
           )}
         </div>
         <div className="my-4">
-          <label htmlFor="experience"><strong>Experience</strong></label>
+          <label htmlFor="experience"><strong>Experience:</strong></label>
           {isEditing ? (
             <textarea
               id="experience"
@@ -260,7 +269,7 @@ const Profile = ({ userId, userData, initialClientData }) => {
           )}
         </div>
         <div className="my-4">
-          <label htmlFor="education"><strong>Education</strong></label>
+          <label htmlFor="education"><strong>Education:</strong></label>
           {isEditing ? (
             <textarea
               id="education"
@@ -272,6 +281,22 @@ const Profile = ({ userId, userData, initialClientData }) => {
             />
           ) : (
             <p>{education}</p>
+          )}
+        </div>
+        <div className="my-4">
+          <label htmlFor="role_status"><strong>Role Status:</strong></label>
+          {isEditing ? (
+            <select
+              id="role_status"
+              value={roleStatus}
+              onChange={handleRoleStatusChange}
+              className="w-full p-2 mt-2 border rounded"
+            >
+              <option value="Looking for Work">Looking for Work</option>
+              <option value="Employed">Employed</option>
+            </select>
+          ) : (
+            <p>{roleStatus}</p>
           )}
         </div>
         {isEditing ? (
