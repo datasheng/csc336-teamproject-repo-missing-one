@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from "react";
 import Premium from './Premium';
+import Link from "next/link";
 
 const Profile = ({ userId, userData, initialClientData }) => {
+
   //console.log("User data:", initialClientData);
+
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [bio, setBio] = useState("");
@@ -366,6 +369,13 @@ else {
         <div className="flex flex-col items-center p-24">
           <div className="max-w-8xl w-full bg-white p-6 rounded-sm shadow-sm">
             <h2 className="text-xl font-semibold text-gray-900 mt-4">Listings</h2>
+            {/* Button to navigate to the job creation page */}
+            <Link href="/listingform">
+          <button
+            className="mt-4 mb-6 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          >
+            Create New Job Listing
+          </button></Link>
             {listings.length > 0 ? (
               <div className="flex flex-wrap justify-left">
                 {listings.map((listing) => (
