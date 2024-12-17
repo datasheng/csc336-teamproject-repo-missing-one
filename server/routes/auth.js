@@ -18,8 +18,6 @@ const db = mysql.createPool({
 router.post("/register", async (req, res) => {
   const { name, email, password, user_type, location } = req.body;
 
-  const date_joined = Math.floor(Date.now() / 1000);
-
   if (!name || !email || !password || !["client", "contractor"].includes(user_type)) {
     return res.status(400).json({ error: "Invalid input" });
   }
@@ -33,11 +31,11 @@ router.post("/register", async (req, res) => {
 
     if (user_type === "client") {
       const query = `
-        INSERT INTO client (name, email, password, date_joined, location) 
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO client (name, email, password) 
+        VALUES (?, ?, ?)
       `;
       
-      db.execute(query, [name, email, hashedPassword, date_joined, location], (err, results) => {
+      db.execute(query, [name, email, hashedPassword], (err, results) => {
         if (err) {
           return res.status(400).json({ error: err.message });
         }
@@ -48,11 +46,11 @@ router.post("/register", async (req, res) => {
       });
     } else {
       const query = `
-        INSERT INTO contractor (name, email, password, date_joined) 
-        VALUES (?, ?, ?, ?)
+        INSERT INTO contractor (name, email, password) 
+        VALUES (?, ?, ?)
       `;
       
-      db.execute(query, [name, email, hashedPassword, date_joined], (err, results) => {
+      db.execute(query, [name, email, hashedPassword], (err, results) => {
         if (err) {
           return res.status(400).json({ error: err.message });
         }
