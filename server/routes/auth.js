@@ -17,7 +17,6 @@ const db = mysql.createPool({
 // **Register Endpoint**
 router.post("/register", async (req, res) => {
   const { name, email, password, user_type, location } = req.body;
-  console.log("Registration attempt:", { name, email, user_type, location });
 
   const date_joined = Math.floor(Date.now() / 1000);
 
@@ -38,11 +37,14 @@ router.post("/register", async (req, res) => {
         VALUES (?, ?, ?, ?, ?)
       `;
       
-      db.execute(query, [name, email, hashedPassword, date_joined, location], (err) => {
+      db.execute(query, [name, email, hashedPassword, date_joined, location], (err, results) => {
         if (err) {
           return res.status(400).json({ error: err.message });
         }
-        res.status(201).json({ message: "Client registered successfully" });
+        res.status(201).json({
+          message: "Registration successful",
+          userId: results.insertId
+        });
       });
     } else {
       const query = `
@@ -50,15 +52,18 @@ router.post("/register", async (req, res) => {
         VALUES (?, ?, ?, ?)
       `;
       
-      db.execute(query, [name, email, hashedPassword, date_joined], (err) => {
+      db.execute(query, [name, email, hashedPassword, date_joined], (err, results) => {
         if (err) {
           return res.status(400).json({ error: err.message });
         }
-        res.status(201).json({ message: "Contractor registered successfully" });
+        res.status(201).json({
+          message: "Registration successful",
+          userId: results.insertId
+        });
       });
     }
-  } catch (err) {
-    res.status(500).json({ error: "Server error" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 

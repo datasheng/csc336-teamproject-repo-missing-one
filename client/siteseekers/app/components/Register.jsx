@@ -46,10 +46,30 @@ const Register = () => {
       if (!response.ok) {
         throw new Error(data.error || 'Error registering user');
       }
+
+      if (formData.user_type === 'contractor' && data.userId) {
+        const profileResponse = await fetch("http://localhost:3001/profile/create", {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contractor_id: data.userId,
+            bio: "",
+            phone_number: null,
+            role_status: "Looking for Work"
+          })
+        });
+
+        if (!profileResponse.ok) {
+          throw new Error("Failed to create profile");
+        }
+      }
       
-      alert(data.message);
+      alert("Registration successful!");
+      window.location.href = '/login';
     } catch (error) {
-      console.error(error);
+      console.error("Registration error:", error);
       alert(error.message);
     }
   };
