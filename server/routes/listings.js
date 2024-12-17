@@ -54,4 +54,56 @@ router.get("/", (req, res) => {
   });
 });
 
+// Add new job listing
+router.post("/", (req, res) => {
+  const {
+    client_id,
+    title,
+    description,
+    location,
+    min_salary,
+    max_salary,
+    actual_salary,
+    rate_type,
+    status
+  } = req.body;
+
+  if (!client_id) {
+    return res.status(400).json({ error: "Client ID is required" });
+  }
+
+  const query = `
+    INSERT INTO job (
+      client_id,
+      title,
+      description,
+      location,
+      status,
+      min_salary,
+      max_salary,
+      actual_salary,
+      rate_type
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  const values = [
+    client_id,
+    title,
+    description,
+    location,
+    status,
+    min_salary,
+    max_salary,
+    actual_salary,
+    rate_type
+  ];
+
+  db.query(query, values, (err, result) => {
+    if (err) {
+      return res.status(500).json({ error: "Error creating job listing" });
+    }
+    res.status(201).json({ message: "Job listing created successfully", job_id: result.insertId });
+  });
+});
+
 module.exports = router;
