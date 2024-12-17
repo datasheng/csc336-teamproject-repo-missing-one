@@ -54,6 +54,81 @@ router.get("/", (req, res) => {
   });
 });
 
+
+router.get("/job/:job_id", async (req, res) => {
+  const { job_id } = req.params;
+  const query = `SELECT * FROM job WHERE job_id = ?`;
+
+  db.query(query, [job_id], (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Error fetching job details" });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: "Job not found" });
+    }
+
+    const job = results[0];
+    const formattedJob = {
+      ...job,
+      date_posted: new Date(job.date_posted).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }),
+      min_salary: parseFloat(job.min_salary).toLocaleString('en-US'),
+      max_salary: parseFloat(job.max_salary).toLocaleString('en-US'),
+      actual_salary: parseFloat(job.actual_salary).toLocaleString('en-US')
+    };
+
+    res.json(formattedJob);
+  });
+});
+
+router.post("/check-application", async (req, res) => {
+  const { contractor_id, job_id } = req.body;
+  const query = "SELECT * FROM job_application WHERE contractor_id = ? AND job_id = ?";
+
+  db.query(query, [contractor_id, job_id], (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Error checking application status" });
+    }
+
+    if (results.length > 0) {
+      return res.status(200).json({ applied: true });
+    }
+
+    res.status(200).json({ applied: false });
+  });
+});
+
+router.post("/apply", async (req, res) => {
+  const { contractor_id, job_id, tell_answer, fit_answer, ambitious_answer, location } = req.body;
+  const application_date = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  const date_applied = Date.now();
+  const status = "Pending";
+
+  const query = `
+    INSERT INTO job_application (contractor_id, job_id, application_date, date_applied, status, tell_answer, fit_answer, ambitious_answer, location)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  db.query(query, [contractor_id, job_id, application_date, date_applied, status, tell_answer, fit_answer, ambitious_answer, location], (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Error submitting job application" });
+    }
+
+    res.status(201).json({ message: "Job application submitted successfully" });
+  });
+});
+
 // Add new job listing
 router.post("/", (req, res) => {
   const {
@@ -105,5 +180,6 @@ router.post("/", (req, res) => {
     res.status(201).json({ message: "Job listing created successfully", job_id: result.insertId });
   });
 });
+
 
 module.exports = router;
