@@ -170,8 +170,8 @@ router.put("/skills/:contractor_id", async (req, res) => {
     // Insert new skills if any
     if (skills && skills.length > 0) {
       const skillValues = skills
-        .filter(skill => skill && typeof skill === 'string' && skill.trim() !== '')
-        .map(skill => [profile_id, skill.trim()]);
+        .filter(skill => skill && skill.skill_name && skill.skill_name.trim() !== '')
+        .map(skill => [profile_id, skill.skill_name.trim()]);
 
       if (skillValues.length > 0) {
         await db.promise().query(
@@ -187,11 +187,14 @@ router.put("/skills/:contractor_id", async (req, res) => {
       [profile_id]
     );
 
+    // Format the response to match the expected structure
+    const formattedSkills = updatedSkills.map(skill => ({
+      skill_name: skill.skill_name
+    }));
+
     res.status(200).json({
       message: "Skills updated successfully",
-      skills: updatedSkills.map(skill => ({
-        skill_name: skill.skill_name
-      }))
+      skills: formattedSkills
     });
 
   } catch (error) {

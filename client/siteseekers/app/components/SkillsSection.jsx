@@ -20,16 +20,15 @@ const SkillsSection = ({ userId, skills, setSkills, fetchSkills }) => {
 
   const handleSaveSkills = async () => {
     try {
-      const skillsToSave = skills
-        .filter(skill => skill.skill_name && skill.skill_name.trim() !== "")
-        .map(skill => skill.skill_name);
+      const skillsToSave = skills.filter(skill => 
+        skill.skill_name && skill.skill_name.trim() !== ""
+      );
 
       const skillsResponse = await fetch(`http://localhost:3001/profile/skills/${userId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          skills: skillsToSave,
-          preserveEducation: true
+          skills: skillsToSave
         }),
       });
 
@@ -37,7 +36,11 @@ const SkillsSection = ({ userId, skills, setSkills, fetchSkills }) => {
         throw new Error('Failed to update skills');
       }
 
-      await fetchSkills();
+      const data = await skillsResponse.json();
+      if (data.skills) {
+        setSkills(data.skills);
+      }
+      
       setIsEditingSkills(false);
       alert('Skills updated successfully!');
     } catch (error) {
