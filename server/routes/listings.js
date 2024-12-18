@@ -9,7 +9,7 @@ const db = mysql.createPool({
   password: process.env.MYSQL_PASSWORD,
   database: process.env.MYSQL_DATABASE,
   port: process.env.MYSQL_PORT,
-});
+}).promise();
 
 // Get all job listings
 router.get("/", (req, res) => {
@@ -142,8 +142,60 @@ router.post("/apply", async (req, res) => {
   });
 });
 
-// Add new job listing
-router.post("/", (req, res) => {
+// // Add new job listing
+// router.post("/", (req, res) => {
+//   const {
+//     client_id,
+//     title,
+//     description,
+//     location,
+//     min_salary,
+//     max_salary,
+//     actual_salary,
+//     rate_type,
+//     status
+//   } = req.body;
+
+//   if (!client_id) {
+//     return res.status(400).json({ error: "Client ID is required" });
+//   }
+
+//   const query = `
+//     INSERT INTO job (
+//       client_id,
+//       title,
+//       description,
+//       location,
+//       status,
+//       min_salary,
+//       max_salary,
+//       actual_salary,
+//       rate_type
+//     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+//   `;
+
+//   const values = [
+//     client_id,
+//     title,
+//     description,
+//     location,
+//     status,
+//     min_salary,
+//     max_salary,
+//     actual_salary,
+//     rate_type
+//   ];
+
+//   db.query(query, values, (err, result) => {
+//     if (err) {
+//       return res.status(500).json({ error: "Error creating job listing" });
+//     }
+//     res.status(201).json({ message: "Job listing created successfully", job_id: result.insertId });
+//   });
+// });
+
+// Update the POST endpoint to use the stored procedure
+router.post("/", async (req, res) => {
   const {
     client_id,
     title,
@@ -160,38 +212,30 @@ router.post("/", (req, res) => {
     return res.status(400).json({ error: "Client ID is required" });
   }
 
-  const query = `
-    INSERT INTO job (
-      client_id,
-      title,
-      description,
-      location,
-      status,
-      min_salary,
-      max_salary,
-      actual_salary,
-      rate_type
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `;
+  try {
+    // Call the stored procedure
+    await db.query('SET @new_job_id = 0');
+    await db.query(
+      'CALL sp_add_job(?, ?, ?, ?, ?, ?, ?, ?, ?, @new_job_id)',
+      [client_id, title, description, location, status, min_salary, max_salary, actual_salary, rate_type]
+    );
 
-  const values = [
-    client_id,
-    title,
-    description,
-    location,
-    status,
-    min_salary,
-    max_salary,
-    actual_salary,
-    rate_type
-  ];
+    // Get the new job ID
+    const [result] = await db.query('SELECT @new_job_id as job_id');
+    const newJobId = result[0].job_id;
 
-  db.query(query, values, (err, result) => {
-    if (err) {
-      return res.status(500).json({ error: "Error creating job listing" });
+    res.status(201).json({ 
+      message: "Job listing created successfully", 
+      job_id: newJobId 
+    });
+  } catch (err) {
+    console.error("Database error:", err);
+    // Check if this is a stored procedure error (sqlState '45000')
+    if (err.sqlState === '45000') {
+      return res.status(400).json({ error: err.sqlMessage });
     }
-    res.status(201).json({ message: "Job listing created successfully", job_id: result.insertId });
-  });
+    res.status(500).json({ error: "Error creating job listing" });
+  }
 });
 
 router.get("/applied-jobs/:contractor_id", async (req, res) => {
