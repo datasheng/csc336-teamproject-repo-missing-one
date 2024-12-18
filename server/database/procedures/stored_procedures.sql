@@ -13,7 +13,7 @@ CREATE PROCEDURE sp_add_job(
     OUT p_job_id BIGINT
 )
 BEGIN
-    -- Declare handler at the start of BEGIN block
+    -- checks for any sql errors
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
         ROLLBACK;
@@ -23,12 +23,12 @@ BEGIN
     -- Validate salary constraints
     IF p_min_salary >= p_max_salary THEN
         SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Error: Minimum salary must be less than maximum salary';
+        SET MESSAGE_TEXT = 'Error message from SP: Minimum salary must be less than maximum salary';
     END IF;
 
     IF p_actual_salary < p_min_salary OR p_actual_salary > p_max_salary THEN
         SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Error: Actual salary must be between minimum and maximum salary';
+        SET MESSAGE_TEXT = 'Error message from SP: Actual salary must be between minimum and maximum salary';
     END IF;
 
     START TRANSACTION;
@@ -58,3 +58,67 @@ BEGIN
     SET p_job_id = LAST_INSERT_ID();
     COMMIT;
 END;
+
+
+
+-- 2nd procedure
+
+
+DROP PROCEDURE IF EXISTS sp_apply_for_job;
+
+CREATE PROCEDURE sp_apply_for_job(
+    IN p_job_id BIGINT,
+    IN p_contractor_id BIGINT,
+    IN p_tell_answer TEXT,
+    IN p_fit_answer TEXT,
+    IN p_ambitious_answer TEXT,
+    IN p_location VARCHAR(255),
+    OUT p_application_id BIGINT
+)
+BEGIN
+    -- variable to store our checks
+    DECLARE existing_application BIGINT;
+    
+
+    -- Check if contractor has already applied
+    SELECT application_id INTO existing_application 
+    FROM job_application 
+    WHERE job_id = p_job_id AND contractor_id = p_contractor_id
+    LIMIT 1;
+    
+    IF existing_application IS NOT NULL THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Message from SP: You have already applied for this job';
+    END IF;
+
+    -- Start transaction for the insert
+    START TRANSACTION;
+    
+    -- Insert application
+    INSERT INTO job_application (
+        job_id,
+        contractor_id,
+        tell_answer,
+        fit_answer,
+        ambitious_answer,
+        location,
+        date_applied,
+        status
+    ) VALUES (
+        p_job_id,
+        p_contractor_id,
+        p_tell_answer,
+        p_fit_answer,
+        p_ambitious_answer,
+        p_location,
+        NOW(),
+        'Pending'
+    );
+    
+    -- Get the new application ID
+    SET p_application_id = LAST_INSERT_ID();
+    
+    -- Commit transaction
+    COMMIT;
+END;
+
