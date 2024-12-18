@@ -4,7 +4,7 @@ import Link from "next/link";
 import SkillsSection from './SkillsSection';
 import ExperienceSection from './ExperienceSection';
 import EducationSection from './EducationSection';
-
+import ApplicantsModal from './ApplicantsModal';
 const Profile = ({ userId, userData, initialClientData }) => {
 
   //console.log("User data:", initialClientData);
@@ -25,7 +25,9 @@ const Profile = ({ userId, userData, initialClientData }) => {
   const [isHiring, setIsHiring] = useState(initialClientData ? initialClientData.isHiring : "");
   const [listings, setListings] = useState([]);
   const [roleStatus, setRoleStatus] = useState("");
-
+  const [showApplicantsModal, setShowApplicantsModal] = useState(false);
+  const [applicants, setApplicants] = useState([]);
+  const [selectedJobId, setSelectedJobId] = useState(null);
   const [appliedJobs, setAppliedJobs] = useState([]);   
 
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -176,6 +178,31 @@ const Profile = ({ userId, userData, initialClientData }) => {
     }]);
   };
 
+  const fetchApplicants = async (jobId) => {
+    try {
+      const response = await fetch(`http://localhost:3001/profile/applicants/${jobId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch applicants');
+      }
+      const data = await response.json();
+      setApplicants(data);
+      setShowApplicantsModal(true);
+    } catch (err) {
+      console.error('Error fetching applicants:', err);
+      setError('Failed to load applicants');
+    }
+  };
+
+  const handleSeeApplicants = (jobId) => {
+    setSelectedJobId(jobId);
+    fetchApplicants(jobId);
+  };
+
+  const handleCloseModal = () => {
+    setShowApplicantsModal(false);
+    setApplicants([]);
+  };
+
   const handleExperienceChange = (index, field, value) => {
     const newExperiences = [...experiences];
     newExperiences[index][field] = value;
@@ -203,75 +230,46 @@ const Profile = ({ userId, userData, initialClientData }) => {
 
   const handleSaveProfile = async () => {
     try {
-      console.log("Current skills before save:", skills);
-
-      // 1. Save basic profile data
       const profileData = {
         bio: bio || '',
         phone_number: phoneNumber || null,
         role_status: roleStatus || 'Looking for Work'
       };
       
-      const profileResponse = await fetch(`http://localhost:3001/profile/${userId}`, {
+      const response = await fetch(`http://localhost:3001/profile/${userId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(profileData),
       });
 
-      if (!profileResponse.ok) {
+      if (!response.ok) {
         throw new Error('Failed to update profile');
       }
 
-      // 2. Save skills - Keep the skill_name object format
-      console.log("Sending skills to server:", skills);
+      const updatedProfile = await response.json();
+      //console.log("Updated profile:", updatedProfile);
+      setUserProfile(updatedProfile);
+
       const skillsResponse = await fetch(`http://localhost:3001/profile/skills/${userId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ 
-          skills: skills || []
-        }),
+        body: JSON.stringify({ skills, experience, education }),
       });
-
       if (!skillsResponse.ok) {
-        throw new Error('Failed to update skills');
+        throw new Error(`Error: ${skillsResponse.status} ${skillsResponse.statusText}`);
       }
-
-      // Get the updated data
-      const skillsData = await skillsResponse.json();
-      console.log("Received skills data from server:", skillsData);
-
-      // Update state with returned data
-      if (skillsData.skills) {
-        console.log("Setting skills state to:", skillsData.skills);
-        setSkills(skillsData.skills);
-      }
-
-      // 3. Save experiences
-      const experiencesResponse = await fetch(`http://localhost:3001/profile/experiences/${userId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ 
-          experiences: experiences || []
-        }),
-      });
-
-      if (!experiencesResponse.ok) {
-        throw new Error('Failed to update experiences');
-      }
-
-      // Get the updated data
-      const experiencesData = await experiencesResponse.json();
-
-      // Update state with returned data - Keep the skill_name object format
-      if (experiencesData.experiences) {
-        setExperiences(experiencesData.experiences);
-      }
+      const updatedSkills = await skillsResponse.json();
+      //("Updated skills:", updatedSkills);
+      setSkills(updatedSkills.skills);
+      setExperiences(updatedSkills.experience);
+      setEducation(updatedSkills.education);
       
       setIsEditing(false);
+
+
+      await fetchProfile();
       setIsEditingProfile(false);
       alert('Profile updated successfully!');
 
@@ -533,6 +531,9 @@ else {
                     <p><strong>Actual Salary:</strong> {listing.actual_salary}</p>
                     <p><strong>Date Posted:</strong> {listing.date_posted}</p>
                     <p><strong>Rate Type:</strong> {listing.rate_type}</p>
+                    <button onClick={() => handleSeeApplicants(listing.job_id)}
+                            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded">
+                      See Applicants </button>
                   </div>
                 ))}
                 
@@ -541,6 +542,11 @@ else {
             <p>No listings found.</p>
           )}
       </div>
+      <ApplicantsModal 
+        show={showApplicantsModal} 
+        onClose={handleCloseModal} 
+        applicants={applicants} 
+        jobId={selectedJobId} />
     </div>
     </>
 
