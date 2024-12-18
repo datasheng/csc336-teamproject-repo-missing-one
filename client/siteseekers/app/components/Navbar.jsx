@@ -14,8 +14,9 @@ export default function Navbar() {
   }, []);
 
   const handleLogout = () => {
-    // Clear token from localStorage
+    // Clear token and user data from localStorage
     localStorage.removeItem('token');
+    localStorage.removeItem('userData');
     setIsLoggedIn(false);
     router.push('/'); // Redirect to home page after logout
   };

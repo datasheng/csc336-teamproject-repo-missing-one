@@ -98,7 +98,7 @@ export default function Listing() {
           onClose={handleCloseModal}
           onSubmit={handleSubmitApplication}
           jobId={selectedJobId}
-          contractor_id={userData.id}
+          contractor_id={userData?.id}
         />
       )}
     </div>
