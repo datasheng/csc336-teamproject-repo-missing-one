@@ -95,7 +95,14 @@ const Modal = ({ show, onClose, onSubmit, jobId, contractor_id }) => {
     e.preventDefault();
     console.log("Form submitted");
     
-    if (!userData || userData.userType !== "contractor") {
+    // First check if user is logged in
+    if (!userData) {
+      alert("Please log in to apply for jobs");
+      return;
+    }
+    
+    // Then check if user is a contractor
+    if (userData.userType !== "contractor") {
       console.log("User validation failed:", userData);
       alert("You must be logged in as a contractor to apply for jobs");
       return;
