@@ -11,7 +11,7 @@ const db = mysql.createPool({
   port: process.env.MYSQL_PORT,
 }).promise();
 
-// Add this at the top of your routes
+
 router.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
@@ -129,59 +129,7 @@ router.post("/apply", async (req, res) => {
   }
 });
 
-// // Add new job listing
-// router.post("/", (req, res) => {
-//   const {
-//     client_id,
-//     title,
-//     description,
-//     location,
-//     min_salary,
-//     max_salary,
-//     actual_salary,
-//     rate_type,
-//     status
-//   } = req.body;
-
-//   if (!client_id) {
-//     return res.status(400).json({ error: "Client ID is required" });
-//   }
-
-//   const query = `
-//     INSERT INTO job (
-//       client_id,
-//       title,
-//       description,
-//       location,
-//       status,
-//       min_salary,
-//       max_salary,
-//       actual_salary,
-//       rate_type
-//     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-//   `;
-
-//   const values = [
-//     client_id,
-//     title,
-//     description,
-//     location,
-//     status,
-//     min_salary,
-//     max_salary,
-//     actual_salary,
-//     rate_type
-//   ];
-
-//   db.query(query, values, (err, result) => {
-//     if (err) {
-//       return res.status(500).json({ error: "Error creating job listing" });
-//     }
-//     res.status(201).json({ message: "Job listing created successfully", job_id: result.insertId });
-//   });
-// });
-
-// Update the POST endpoint to use the stored procedure
+//POST endpoint to use the stored procedure
 router.post("/", async (req, res) => {
   const {
     client_id,
@@ -378,7 +326,7 @@ router.get("/job/:id", async (req, res) => {
   }
 });
 
-// Add this endpoint
+// Endpoint to fetch applicants for a job
 router.get("/applicants/:job_id", async (req, res) => {
   const { job_id } = req.params;
   
@@ -417,7 +365,7 @@ router.get("/applicants/:job_id", async (req, res) => {
     res.status(500).json({ 
       error: "Error fetching applicants",
       details: err.message,
-      stack: err.stack // Adding stack trace for debugging
+      stack: err.stack // for debugging
     });
   }
 });
