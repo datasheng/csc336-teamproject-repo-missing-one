@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const ExperienceSection = ({ userId, experiences, setExperiences, fetchExperiences }) => {
+const ExperienceSection = ({ userId, experiences = [], setExperiences, fetchExperiences }) => {
   const [isEditingExperience, setIsEditingExperience] = useState(false);
 
   const handleAddExperience = () => {
