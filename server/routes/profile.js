@@ -398,23 +398,22 @@ router.get('/listings/:userId', (req, res) => {
 
 
 router.get("/client/:client_id", async (req, res) => {
-    const { client_id } = req.params;
-    const query = `SELECT * FROM client WHERE client_id = ?`;
+  const { client_id } = req.params;
+  const query = `SELECT client_id, name, email, company, location, isHiring FROM client WHERE client_id = ?`;
 
-    db.execute(query, [client_id], async (err, results) => {
-        if (err) {
-            console.error("Database error:", err);
-            return res.status(500).json({ error: err.message });
-        }
+  try {
+    const [results] = await db.promise().query(query, [client_id]);
 
-        if (results.length === 0) {
-            return res.status(404).json({ error: "Client not found" });
-            
-        } else {
-            const client = results[0];
-            res.status(200).json(client);
-        }
-    });
+    if (results.length === 0) {
+      return res.status(404).json({ error: "Client not found" });
+    }
+
+    console.log("Client data fetched:", results[0]); // Debug log
+    res.status(200).json(results[0]);
+  } catch (err) {
+    console.error("Database error:", err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 router.put("/client/:client_id", async (req, res) => {
@@ -447,27 +446,6 @@ router.put("/client/:client_id", async (req, res) => {
             res.status(200).json(updatedClient);
         });
     });
-});
-
-// Fetch applicants for a specific job
-router.get("/applicants/:job_id", async (req, res) => {
-  const { job_id } = req.params;
-  const query = `
-    SELECT job_application.*, contractor.name, contractor.email, profile.phone_number, profile.bio
-    FROM job_application
-    JOIN contractor ON job_application.contractor_id = contractor.contractor_id
-    JOIN profile ON contractor.contractor_id = profile.contractor_id
-    WHERE job_application.job_id = ? AND job_application.status = 'Pending';
-  `;
-
-  db.query(query, [job_id], (err, results) => {
-    if (err) {
-      console.error("Database error:", err);
-      return res.status(500).json({ error: "Error fetching applicants" });
-    }
-
-    res.json(results);
-  });
 });
 
 module.exports = router;

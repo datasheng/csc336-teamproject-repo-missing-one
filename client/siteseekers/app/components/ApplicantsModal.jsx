@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 const ApplicantsModal = ({ show, onClose, applicants, jobId }) => {
-  const [listingStatus, setListingStatus] = useState(''); // Default to empty string
+  const [listingStatus, setListingStatus] = useState('');
 
   useEffect(() => {
     if (show && jobId) {
@@ -31,6 +31,7 @@ const ApplicantsModal = ({ show, onClose, applicants, jobId }) => {
         throw new Error('Failed to close listing');
       }
       setListingStatus('Closed');
+      onClose();
     } catch (err) {
       console.error('Error closing listing:', err);
     }
@@ -45,6 +46,7 @@ const ApplicantsModal = ({ show, onClose, applicants, jobId }) => {
         throw new Error('Failed to reopen listing');
       }
       setListingStatus('Open');
+      onClose();
     } catch (err) {
       console.error('Error reopening listing:', err);
     }
@@ -81,7 +83,7 @@ const ApplicantsModal = ({ show, onClose, applicants, jobId }) => {
           <p>No applicants found.</p>
         )}
         <div className="flex justify-end mt-4">
-          {listingStatus.toLocaleLowerCase() === 'open' ? (
+          {listingStatus && listingStatus.toLowerCase() === 'open' ? (
             <button
               onClick={handleCloseListing}
               className="mr-4 px-4 py-2 bg-red-500 text-white rounded"

@@ -2,7 +2,7 @@ const express = require("express");
 const mysql = require("mysql2");
 const router = express.Router();
 
-// Create MySQL connection pool
+// Create MySQL connection pool with promise wrapper
 const db = mysql.createPool({
   host: process.env.MYSQL_HOST,
   user: process.env.MYSQL_USER,
@@ -275,48 +275,59 @@ router.get("/status/:job_id", async (req, res) => {
   const { job_id } = req.params;
   const query = "SELECT status FROM job WHERE job_id = ?";
 
-  db.query(query, [job_id], (err, results) => {
-    if (err) {
-      console.error("Database error:", err);
-      return res.status(500).json({ error: "Error fetching listing status" });
-    }
+  try {
+    const [results] = await db.query(query, [job_id]);
 
     if (results.length === 0) {
       return res.status(404).json({ error: "Listing not found" });
     }
 
+    console.log("Status for job", job_id, ":", results[0].status);
     res.json({ status: results[0].status });
-  });
+  } catch (err) {
+    console.error("Database error:", err);
+    res.status(500).json({ error: "Error fetching listing status" });
+  }
 });
 
 // Close a listing
 router.put("/close/:job_id", async (req, res) => {
   const { job_id } = req.params;
-  const query = "UPDATE job SET status = 'Closed' WHERE job_id = ?";
-
-  db.query(query, [job_id], (err, results) => {
-    if (err) {
-      console.error("Database error:", err);
-      return res.status(500).json({ error: "Error closing listing" });
+  try {
+    const [result] = await db.query(
+      "UPDATE job SET status = 'Closed' WHERE job_id = ?",
+      [job_id]
+    );
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Listing not found" });
     }
-
-    res.json({ success: true });
-  });
+    
+    res.json({ success: true, status: 'Closed' });
+  } catch (err) {
+    console.error("Database error:", err);
+    res.status(500).json({ error: "Error closing listing" });
+  }
 });
 
 // Reopen a listing
 router.put("/reopen/:job_id", async (req, res) => {
   const { job_id } = req.params;
-  const query = "UPDATE job SET status = 'Open' WHERE job_id = ?";
-
-  db.query(query, [job_id], (err, results) => {
-    if (err) {
-      console.error("Database error:", err);
-      return res.status(500).json({ error: "Error reopening listing" });
+  try {
+    const [result] = await db.query(
+      "UPDATE job SET status = 'Open' WHERE job_id = ?",
+      [job_id]
+    );
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Listing not found" });
     }
-
-    res.json({ success: true });
-  });
+    
+    res.json({ success: true, status: 'Open' });
+  } catch (err) {
+    console.error("Database error:", err);
+    res.status(500).json({ error: "Error reopening listing" });
+  }
 });
 
 // Get job by ID
@@ -364,6 +375,50 @@ router.get("/job/:id", async (req, res) => {
   } catch (err) {
     console.error("Database error:", err);
     res.status(500).json({ error: "Error fetching job details" });
+  }
+});
+
+// Add this endpoint
+router.get("/applicants/:job_id", async (req, res) => {
+  const { job_id } = req.params;
+  
+  try {
+    // First check if the job exists
+    const [jobCheck] = await db.query(
+      'SELECT job_id FROM job WHERE job_id = ?',
+      [job_id]
+    );
+
+    if (jobCheck.length === 0) {
+      return res.status(404).json({ error: "Job not found" });
+    }
+
+    const query = `
+      SELECT 
+        ja.*,
+        c.name,
+        c.email,
+        p.phone_number,
+        p.bio,
+        j.status as job_status
+      FROM job_application ja
+      JOIN contractor c ON ja.contractor_id = c.contractor_id
+      JOIN profile p ON c.contractor_id = p.contractor_id
+      JOIN job j ON ja.job_id = j.job_id
+      WHERE ja.job_id = ?
+    `;
+
+    const [results] = await db.query(query, [job_id]);
+    console.log("Fetched applicants for job", job_id, ":", results);
+    
+    res.json(results);
+  } catch (err) {
+    console.error("Database error:", err);
+    res.status(500).json({ 
+      error: "Error fetching applicants",
+      details: err.message,
+      stack: err.stack // Adding stack trace for debugging
+    });
   }
 });
 

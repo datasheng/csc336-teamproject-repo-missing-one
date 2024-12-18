@@ -19,10 +19,10 @@ const Profile = ({ userId, userData, initialClientData }) => {
   const [education, setEducation] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [isEditingClient, setIsEditingClient] = useState(false);
-  const [clientData, setClientData] = useState(initialClientData || null);
-  const [company, setCompany] = useState(initialClientData ? initialClientData.company : "");
-  const [location, setLocation] = useState(initialClientData ? initialClientData.location : "");
-  const [isHiring, setIsHiring] = useState(initialClientData ? initialClientData.isHiring : "");
+  const [clientData, setClientData] = useState(null);
+  const [company, setCompany] = useState("");
+  const [location, setLocation] = useState("");
+  const [isHiring, setIsHiring] = useState("");
   const [listings, setListings] = useState([]);
   const [roleStatus, setRoleStatus] = useState("");
   const [showApplicantsModal, setShowApplicantsModal] = useState(false);
@@ -115,21 +115,20 @@ const Profile = ({ userId, userData, initialClientData }) => {
   };
 
   const fetchClient = async () => {
-      try {
-        const response = await fetch(`http://localhost:3001/profile/client/${userId}`);
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status} ${response.statusText}`);
-        }
-        //console.log("Listings response:", response);
-        const data = await response.json();
-        setClientData(data);
-        setCompany(data.company);
-        setLocation(data.location);
-        setIsHiring(data.isHiring);
-      } catch (error) {
-        setError(error.message);
+    try {
+      const response = await fetch(`http://localhost:3001/profile/client/${userId}`);
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status} ${response.statusText}`);
       }
-    };
+      const data = await response.json();
+      setClientData(data);
+      setCompany(data.company || "");
+      setLocation(data.location || "");
+      setIsHiring(data.isHiring || "");
+    } catch (error) {
+      setError(error.message);
+    }
+  };
 
   const fetchExperiences = async () => {
     try {
@@ -181,16 +180,17 @@ const Profile = ({ userId, userData, initialClientData }) => {
 
   const fetchApplicants = async (jobId) => {
     try {
-      const response = await fetch(`http://localhost:3001/profile/applicants/${jobId}`);
+      const response = await fetch(`http://localhost:3001/api/listings/applicants/${jobId}`);
       if (!response.ok) {
         throw new Error('Failed to fetch applicants');
       }
       const data = await response.json();
+      console.log("Fetched applicants:", data);
       setApplicants(data);
       setShowApplicantsModal(true);
-    } catch (err) {
-      console.error('Error fetching applicants:', err);
-      setError('Failed to load applicants');
+    } catch (error) {
+      console.error('Error fetching applicants:', error);
+      alert('Failed to load applicants');
     }
   };
 
