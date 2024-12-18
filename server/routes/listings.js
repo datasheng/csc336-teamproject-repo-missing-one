@@ -11,32 +11,33 @@ const db = mysql.createPool({
   port: process.env.MYSQL_PORT,
 }).promise();
 
-// Get all job listings
-router.get("/", (req, res) => {
-  const query = `
-    SELECT 
-      j.job_id,
-      j.title,
-      j.description,
-      j.location,
-      j.date_posted,
-      j.status,
-      j.min_salary,
-      j.max_salary,
-      j.actual_salary,
-      j.rate_type,
-      c.name as client_name
-    FROM job j
-    LEFT JOIN client c ON j.client_id = c.client_id
-    WHERE j.status = 'open' OR j.status = 'Open'
-    ORDER BY j.date_posted DESC
-  `;
+// Add this at the top of your routes
+router.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
 
-  db.query(query, (err, results) => {
-    if (err) {
-      console.error("Database error:", err);
-      return res.status(500).json({ error: "Error fetching job listings" });
-    }
+// Get all job listings
+router.get("/", async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        j.job_id,
+        j.title,
+        j.description,
+        j.location,
+        j.date_posted,
+        j.status,
+        j.min_salary,
+        j.max_salary,
+        j.actual_salary,
+        j.rate_type,
+        c.name as client_name
+      FROM job j
+      LEFT JOIN client c ON j.client_id = c.client_id
+      ORDER BY j.date_posted DESC
+    `;
+
+    const [results] = await db.query(query);
 
     // Format the date to show only YYYY-MM-DD
     const formattedResults = results.map(job => ({
@@ -52,66 +53,57 @@ router.get("/", (req, res) => {
     }));
 
     res.json(formattedResults);
-  });
-});
-
-
-router.get("/job/:job_id", async (req, res) => {
-  const { job_id } = req.params;
-  const query = `SELECT * FROM job WHERE job_id = ?`;
-
-  db.query(query, [job_id], (err, results) => {
-    if (err) {
-      console.error("Database error:", err);
-      return res.status(500).json({ error: "Error fetching job details" });
-    }
-
-    if (results.length === 0) {
-      return res.status(404).json({ error: "Job not found" });
-    }
-
-    const job = results[0];
-    const formattedJob = {
-      ...job,
-      date_posted: new Date(job.date_posted).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      }),
-      min_salary: parseFloat(job.min_salary).toLocaleString('en-US'),
-      max_salary: parseFloat(job.max_salary).toLocaleString('en-US'),
-      actual_salary: parseFloat(job.actual_salary).toLocaleString('en-US')
-    };
-
-    res.json(formattedJob);
-  });
+  } catch (err) {
+    console.error("Database error:", err);
+    res.status(500).json({ error: "Error fetching job listings" });
+  }
 });
 
 router.post("/check-application", async (req, res) => {
   const { contractor_id, job_id } = req.body;
-  const query = "SELECT * FROM job_application WHERE contractor_id = ? AND job_id = ?";
+  console.log("Checking application for:", { contractor_id, job_id });
 
-  db.query(query, [contractor_id, job_id], (err, results) => {
-    if (err) {
-      console.error("Database error:", err);
-      return res.status(500).json({ error: "Error checking application status" });
-    }
+  try {
+    const query = "SELECT * FROM job_application WHERE contractor_id = ? AND job_id = ?";
+    const [results] = await db.query(query, [contractor_id, job_id]);
+    
+    console.log("Check results:", results);
 
-    if (results.length > 0) {
-      return res.status(200).json({ applied: true });
-    }
-
-    res.status(200).json({ applied: false });
-  });
+    res.status(200).json({ 
+      applied: results.length > 0,
+      message: results.length > 0 ? "Already applied" : "Not applied yet"
+    });
+  } catch (err) {
+    console.error("Database error:", err);
+    res.status(500).json({ error: "Error checking application status" });
+  }
 });
 
 router.post("/apply", async (req, res) => {
+  console.log("Received application:", req.body);
   const { contractor_id, job_id, tell_answer, fit_answer, ambitious_answer, location } = req.body;
-  const date_applied = Date.now();
+  
+  // Fix the date format
+  const date_applied = new Date().toISOString().split('T')[0] + ' ' + 
+                      new Date().toTimeString().split(' ')[0];
   const status = "Pending";
 
-  const query = `
-    INSERT INTO job_application (
+  try {
+    const query = `
+      INSERT INTO job_application (
+        contractor_id, 
+        job_id, 
+        date_applied, 
+        status, 
+        tell_answer, 
+        fit_answer, 
+        ambitious_answer, 
+        location
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    const [result] = await db.query(query, [
       contractor_id, 
       job_id, 
       date_applied, 
@@ -120,27 +112,21 @@ router.post("/apply", async (req, res) => {
       fit_answer, 
       ambitious_answer, 
       location
-    )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `;
+    ]);
 
-  db.query(query, [
-    contractor_id, 
-    job_id, 
-    date_applied, 
-    status, 
-    tell_answer, 
-    fit_answer, 
-    ambitious_answer, 
-    location
-  ], (err, results) => {
-    if (err) {
-      console.error("Database error:", err);
-      return res.status(500).json({ error: "Error submitting job application" });
-    }
+    console.log("Application submitted successfully:", result);
 
-    res.status(201).json({ message: "Job application submitted successfully" });
-  });
+    res.status(201).json({ 
+      message: "Job application submitted successfully",
+      application_id: result.insertId 
+    });
+  } catch (err) {
+    console.error("Database error:", err);
+    res.status(500).json({ 
+      error: "Error submitting job application",
+      details: err.message 
+    });
+  }
 });
 
 // // Add new job listing
@@ -241,17 +227,24 @@ router.post("/", async (req, res) => {
 
 router.get("/applied-jobs/:contractor_id", async (req, res) => {
   const { contractor_id } = req.params;
-  const query = `
-    SELECT job.*, job_application.status AS application_status FROM job_application
-    JOIN job ON job_application.job_id = job.job_id
-    WHERE job_application.contractor_id = ?
-  `;
+  try {
+    const query = `
+      SELECT 
+        j.*,
+        ja.status AS application_status,
+        ja.date_applied,
+        ja.tell_answer,
+        ja.fit_answer,
+        ja.ambitious_answer,
+        c.name as client_name
+      FROM job_application ja
+      JOIN job j ON ja.job_id = j.job_id
+      LEFT JOIN client c ON j.client_id = c.client_id
+      WHERE ja.contractor_id = ?
+      ORDER BY ja.date_applied DESC
+    `;
 
-  db.query(query, [contractor_id], (err, results) => {
-    if (err) {
-      console.error("Database error:", err);
-      return res.status(500).json({ error: "Error fetching applied jobs" });
-    }
+    const [results] = await db.query(query, [contractor_id]);
 
     const formattedResults = results.map(job => ({
       ...job,
@@ -260,14 +253,21 @@ router.get("/applied-jobs/:contractor_id", async (req, res) => {
         month: 'long',
         day: 'numeric'
       }),
-      min_salary: parseFloat(job.min_salary).toLocaleString('en-US', { minimumFractionDigits: 2 }),
-      max_salary: parseFloat(job.max_salary).toLocaleString('en-US', { minimumFractionDigits: 2 }),
-      actual_salary: parseFloat(job.actual_salary).toLocaleString('en-US', { minimumFractionDigits: 2 }),
-      application_status: job.application_status
+      date_applied: new Date(job.date_applied).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }),
+      min_salary: parseFloat(job.min_salary),
+      max_salary: parseFloat(job.max_salary),
+      actual_salary: parseFloat(job.actual_salary)
     }));
 
     res.json(formattedResults);
-  });
+  } catch (err) {
+    console.error("Database error:", err);
+    res.status(500).json({ error: "Error fetching applied jobs" });
+  }
 });
 
 // Fetch listing status
@@ -318,4 +318,53 @@ router.put("/reopen/:job_id", async (req, res) => {
     res.json({ success: true });
   });
 });
+
+// Get job by ID
+router.get("/job/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const query = `
+      SELECT 
+        j.job_id,
+        j.title,
+        j.description,
+        j.location,
+        j.date_posted,
+        j.status,
+        j.min_salary,
+        j.max_salary,
+        j.actual_salary,
+        j.rate_type,
+        c.name as client_name
+      FROM job j
+      LEFT JOIN client c ON j.client_id = c.client_id
+      WHERE j.job_id = ?
+    `;
+
+    const [results] = await db.query(query, [id]);
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: "Job not found" });
+    }
+
+    // Format the job details
+    const job = {
+      ...results[0],
+      date_posted: new Date(results[0].date_posted).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }),
+      min_salary: parseFloat(results[0].min_salary),
+      max_salary: parseFloat(results[0].max_salary),
+      actual_salary: parseFloat(results[0].actual_salary)
+    };
+
+    res.json(job);
+  } catch (err) {
+    console.error("Database error:", err);
+    res.status(500).json({ error: "Error fetching job details" });
+  }
+});
+
 module.exports = router;
