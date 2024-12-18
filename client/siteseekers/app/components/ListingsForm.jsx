@@ -50,6 +50,9 @@ const ListingsForm = () => {
       const payload = {
         ...formData,
         client_id: clientId,
+        min_salary: parseFloat(formData.min_salary),
+        max_salary: parseFloat(formData.max_salary),
+        actual_salary: parseFloat(formData.actual_salary)
       };
 
       const response = await fetch("http://localhost:3001/api/listings", {
@@ -63,12 +66,13 @@ const ListingsForm = () => {
       const data = await response.json();
 
       if (response.ok) {
-        alert("Job listing created successfully!");
+        alert(`Job listing created successfully! Job ID: ${data.job_id}`);
         router.push("/profile");
       } else {
-        throw new Error(data.message || "Error creating job listing");
+        throw new Error(data.error || "Error creating job listing");
       }
     } catch (error) {
+      console.error("Error creating job:", error);
       alert(error.message);
     }
   };

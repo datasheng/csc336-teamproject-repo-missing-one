@@ -6,6 +6,19 @@ const listingsRouter = require('./routes/listings');
 const profileRouter = require('./routes/profile');
 const premiumRouter = require('./routes/premium');
 const app = express();
+const path = require('path');
+const { initDatabase } = require('./database/init');
+
+// Add this near the start of your server initialization
+initDatabase()
+  .then(() => {
+    console.log('Database initialized successfully');
+    // Start your server here if you want to ensure DB is ready first
+  })
+  .catch(err => {
+    console.error('Failed to initialize database:', err);
+    process.exit(1);
+  });
 
 app.use(express.json()); // For parsing JSON requests
 app.use(cors({
