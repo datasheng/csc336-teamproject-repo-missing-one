@@ -65,10 +65,11 @@ const Profile = ({ userId, userData, initialClientData }) => {
     try {
       const response = await fetch(`http://localhost:3001/api/listings/applied-jobs/${userId}`);
       if (!response.ok) {
-        throw new Error('Failed to fetch applied jobs');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch applied jobs');
       }
       const data = await response.json();
-      //console.log("Applied jobs:", data);
+      console.log("Applied jobs:", data);
       setAppliedJobs(data);
     } catch (err) {
       console.error('Error fetching applied jobs:', err);
@@ -552,7 +553,6 @@ else {
 
     
   )
-}
-};
+}};
 
 export default Profile;
