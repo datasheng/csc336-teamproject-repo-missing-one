@@ -1,37 +1,44 @@
 import React, { useState, useEffect } from "react";
 import Modal from "./Modal";
-
 export default function Listing() {
   const [jobListings, setJobListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [userType, setUserType] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState(null);
   const [userData, setUserData] = useState(null);
 
+  
   useEffect(() => {
     const storedUserData = localStorage.getItem("userData");
     if (storedUserData) {
       setUserData(JSON.parse(storedUserData));
     }
-
     const fetchListings = async () => {
       try {
         const response = await fetch('http://localhost:3001/api/listings');
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          throw new Error('Failed to fetch listings');
         }
         const data = await response.json();
+        console.log("data", data);
         setJobListings(data);
-        setLoading(false);
       } catch (err) {
         console.error('Error fetching listings:', err);
-        setError(err.message);
+        setError('Failed to load job listings');
+      } finally {
         setLoading(false);
       }
     };
 
     fetchListings();
+
+    // Get user type from localStorage
+    if (storedUserData) {
+      const parsedData = JSON.parse(storedUserData);
+      setUserType(parsedData.userType);
+    }
   }, []);
 
   const handleApply = (jobId) => {
@@ -45,13 +52,15 @@ export default function Listing() {
   };
 
   const handleSubmitApplication = (answers) => {
+    //console.log("Application submitted for job ID:", selectedJobId);
+    //console.log("Answers:", answers);
+    // Perform any necessary actions, such as making an API call to submit the application
     setShowModal(false);
     setSelectedJobId(null);
   };
 
-  if (loading) return <div className="text-center mt-8">Loading job listings...</div>;
-  if (error) return <div className="text-center mt-8 text-red-600">Error: {error}</div>;
-  if (!jobListings.length) return <div className="text-center mt-8">No job listings available.</div>;
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -89,7 +98,7 @@ export default function Listing() {
           onClose={handleCloseModal}
           onSubmit={handleSubmitApplication}
           jobId={selectedJobId}
-          contractor_id={userData?.id}
+          contractor_id={userData.id}
         />
       )}
     </div>

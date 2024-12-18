@@ -13,7 +13,7 @@ const ListingsForm = () => {
     max_salary: "",
     actual_salary: "",
     rate_type: "hourly",
-    status: "open",
+    status: "Open"
   });
 
   useEffect(() => {
@@ -52,7 +52,8 @@ const ListingsForm = () => {
         client_id: clientId,
         min_salary: parseFloat(formData.min_salary),
         max_salary: parseFloat(formData.max_salary),
-        actual_salary: parseFloat(formData.actual_salary)
+        actual_salary: parseFloat(formData.actual_salary),
+        status: "Open"
       };
 
       const response = await fetch("http://localhost:3001/api/listings", {
