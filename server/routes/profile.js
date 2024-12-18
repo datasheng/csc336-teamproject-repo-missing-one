@@ -448,4 +448,33 @@ router.put("/client/:client_id", async (req, res) => {
     });
 });
 
+router.put("/profile/:userId", async (req, res) => {
+  const { userId } = req.params;
+  const { bio, phone_number, role_status, education } = req.body;
+
+  try {
+    console.log("Updating profile for user:", userId, "with data:", req.body);
+
+    const [result] = await db.query(
+      `UPDATE contractor 
+       SET bio = ?, 
+           phone_number = ?, 
+           role_status = ?, 
+           education = ?
+       WHERE contractor_id = ?`,
+      [bio, phone_number, role_status, education, userId]
+    );
+
+    if (result.affectedRows === 0) {
+      console.log("No rows affected. User ID might be invalid:", userId);
+      return res.status(404).json({ error: "Contractor not found" });
+    }
+
+    res.status(200).json({ message: "Profile updated successfully" });
+  } catch (err) {
+    console.error("Database error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

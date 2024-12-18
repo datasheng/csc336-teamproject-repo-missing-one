@@ -31,6 +31,8 @@ const Profile = ({ userId, userData, initialClientData }) => {
   const [appliedJobs, setAppliedJobs] = useState([]);   
 
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isEditingSkills, setIsEditingSkills] = useState(false);
+  const [isEditingExperiences, setIsEditingExperiences] = useState(false);
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -232,51 +234,81 @@ const Profile = ({ userId, userData, initialClientData }) => {
   const handleSaveProfile = async () => {
     try {
       const profileData = {
-        bio: bio || '',
-        phone_number: phoneNumber || null,
-        role_status: roleStatus || 'Looking for Work'
+        bio: bio || "",
+        phone_number: phoneNumber || "",
+        role_status: roleStatus || "",
+        education: education || ""
       };
-      
+
+      console.log("Sending profile data:", profileData);
+
       const response = await fetch(`http://localhost:3001/profile/${userId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(profileData),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update profile');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update profile');
       }
 
-      const updatedProfile = await response.json();
-      //console.log("Updated profile:", updatedProfile);
-      setUserProfile(updatedProfile);
+      const data = await response.json();
+      console.log("Profile update response:", data);
 
-      const skillsResponse = await fetch(`http://localhost:3001/profile/skills/${userId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ skills, experience, education }),
-      });
-      if (!skillsResponse.ok) {
-        throw new Error(`Error: ${skillsResponse.status} ${skillsResponse.statusText}`);
-      }
-      const updatedSkills = await skillsResponse.json();
-      //("Updated skills:", updatedSkills);
-      setSkills(updatedSkills.skills);
-      setExperiences(updatedSkills.experience);
-      setEducation(updatedSkills.education);
-      
-      setIsEditing(false);
-
-
-      await fetchProfile();
       setIsEditingProfile(false);
-      alert('Profile updated successfully!');
-
+      await fetchProfile();
     } catch (error) {
-      console.error("Error saving profile:", error);
-      alert('Failed to save profile: ' + error.message);
+      console.error('Error saving profile:', error);
+      alert(`Failed to save profile: ${error.message}`);
+    }
+  };
+
+  const handleSaveSkills = async () => {
+    try {
+      const response = await fetch(`http://localhost:3001/api/profile/skills/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          skills: skills.map(skill => ({ skill_name: skill }))
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update skills');
+      }
+
+      setIsEditingSkills(false);
+      fetchSkills();
+    } catch (error) {
+      console.error('Error saving skills:', error);
+    }
+  };
+
+  const handleSaveExperiences = async () => {
+    try {
+      const response = await fetch(`http://localhost:3001/api/profile/experiences/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          experiences: experiences
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update experiences');
+      }
+
+      setIsEditingExperiences(false);
+      fetchExperiences();
+    } catch (error) {
+      console.error('Error saving experiences:', error);
     }
   };
 
