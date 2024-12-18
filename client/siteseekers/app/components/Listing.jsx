@@ -20,6 +20,7 @@ export default function Listing() {
           throw new Error('Failed to fetch listings');
         }
         const data = await response.json();
+        console.log("data", data);
         setJobListings(data);
       } catch (err) {
         console.error('Error fetching listings:', err);

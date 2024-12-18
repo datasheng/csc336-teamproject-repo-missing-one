@@ -449,4 +449,25 @@ router.put("/client/:client_id", async (req, res) => {
     });
 });
 
+// Fetch applicants for a specific job
+router.get("/applicants/:job_id", async (req, res) => {
+  const { job_id } = req.params;
+  const query = `
+    SELECT job_application.*, contractor.name, contractor.email, profile.phone_number, profile.bio
+    FROM job_application
+    JOIN contractor ON job_application.contractor_id = contractor.contractor_id
+    JOIN profile ON contractor.contractor_id = profile.contractor_id
+    WHERE job_application.job_id = ? AND job_application.status = 'Pending';
+  `;
+
+  db.query(query, [job_id], (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Error fetching applicants" });
+    }
+
+    res.json(results);
+  });
+});
+
 module.exports = router;

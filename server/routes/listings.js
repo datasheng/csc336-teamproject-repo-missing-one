@@ -28,6 +28,7 @@ router.get("/", (req, res) => {
       c.name as client_name
     FROM job j
     LEFT JOIN client c ON j.client_id = c.client_id
+    WHERE j.status = 'open' OR j.status = 'Open'
     ORDER BY j.date_posted DESC
   `;
 
@@ -225,5 +226,52 @@ router.get("/applied-jobs/:contractor_id", async (req, res) => {
   });
 });
 
+// Fetch listing status
+router.get("/status/:job_id", async (req, res) => {
+  const { job_id } = req.params;
+  const query = "SELECT status FROM job WHERE job_id = ?";
 
+  db.query(query, [job_id], (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Error fetching listing status" });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: "Listing not found" });
+    }
+
+    res.json({ status: results[0].status });
+  });
+});
+
+// Close a listing
+router.put("/close/:job_id", async (req, res) => {
+  const { job_id } = req.params;
+  const query = "UPDATE job SET status = 'Closed' WHERE job_id = ?";
+
+  db.query(query, [job_id], (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Error closing listing" });
+    }
+
+    res.json({ success: true });
+  });
+});
+
+// Reopen a listing
+router.put("/reopen/:job_id", async (req, res) => {
+  const { job_id } = req.params;
+  const query = "UPDATE job SET status = 'Open' WHERE job_id = ?";
+
+  db.query(query, [job_id], (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Error reopening listing" });
+    }
+
+    res.json({ success: true });
+  });
+});
 module.exports = router;
