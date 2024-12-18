@@ -79,53 +79,83 @@ router.post("/check-application", async (req, res) => {
   }
 });
 
-router.post("/apply", async (req, res) => {
-  console.log("Received application:", req.body);
-  const { contractor_id, job_id, tell_answer, fit_answer, ambitious_answer, location } = req.body;
+// router.post("/apply", async (req, res) => {
+//   console.log("Received application:", req.body);
+//   const { contractor_id, job_id, tell_answer, fit_answer, ambitious_answer, location } = req.body;
   
-  // Fix the date format
-  const date_applied = new Date().toISOString().split('T')[0] + ' ' + 
-                      new Date().toTimeString().split(' ')[0];
-  const status = "Pending";
+//   // Fix the date format
+//   const date_applied = new Date().toISOString().split('T')[0] + ' ' + 
+//                       new Date().toTimeString().split(' ')[0];
+//   const status = "Pending";
+
+//   try {
+//     const query = `
+//       INSERT INTO job_application (
+//         contractor_id, 
+//         job_id, 
+//         date_applied, 
+//         status, 
+//         tell_answer, 
+//         fit_answer, 
+//         ambitious_answer, 
+//         location
+//       )
+//       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+//     `;
+
+//     const [result] = await db.query(query, [
+//       contractor_id, 
+//       job_id, 
+//       date_applied, 
+//       status, 
+//       tell_answer, 
+//       fit_answer, 
+//       ambitious_answer, 
+//       location
+//     ]);
+
+//     console.log("Application submitted successfully:", result);
+
+//     res.status(201).json({ 
+//       message: "Job application submitted successfully",
+//       application_id: result.insertId 
+//     });
+//   } catch (err) {
+//     console.error("Database error:", err);
+//     res.status(500).json({ 
+//       error: "Error submitting job application",
+//       details: err.message 
+//     });
+//   }
+// });
+
+router.post("/apply", async (req, res) => {
+  const { job_id, contractor_id, tell_answer, fit_answer, ambitious_answer, location } = req.body;
 
   try {
-    const query = `
-      INSERT INTO job_application (
-        contractor_id, 
-        job_id, 
-        date_applied, 
-        status, 
-        tell_answer, 
-        fit_answer, 
-        ambitious_answer, 
-        location
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `;
+    // Set up the output parameter
+    await db.query('SET @application_id = 0');
+    
+    // Call the stored procedure
+    const [result] = await db.query(
+      'CALL sp_apply_for_job(?, ?, ?, ?, ?, ?, @application_id)',
+      [job_id, contractor_id, tell_answer, fit_answer, ambitious_answer, location]
+    );
+    
+    // Get the result
+    const [applicationResult] = await db.query('SELECT @application_id as application_id');
+    const applicationId = applicationResult[0].application_id;
 
-    const [result] = await db.query(query, [
-      contractor_id, 
-      job_id, 
-      date_applied, 
-      status, 
-      tell_answer, 
-      fit_answer, 
-      ambitious_answer, 
-      location
-    ]);
-
-    console.log("Application submitted successfully:", result);
-
-    res.status(201).json({ 
-      message: "Job application submitted successfully",
-      application_id: result.insertId 
+    res.status(201).json({
+      message: "Application submitted successfully",
+      application_id: applicationId
     });
   } catch (err) {
-    console.error("Database error:", err);
-    res.status(500).json({ 
-      error: "Error submitting job application",
-      details: err.message 
-    });
+    console.error("Application error:", err);
+    if (err.sqlState === '45000') {
+      return res.status(400).json({ error: err.sqlMessage });
+    }
+    res.status(500).json({ error: "Error submitting application" });
   }
 });
 

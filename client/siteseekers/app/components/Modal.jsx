@@ -93,15 +93,12 @@ const Modal = ({ show, onClose, onSubmit, jobId, contractor_id }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Form submitted");
     
-    // First check if user is logged in
     if (!userData) {
       alert("Please log in to apply for jobs");
       return;
     }
     
-    // Then check if user is a contractor
     if (userData.userType !== "contractor") {
       console.log("User validation failed:", userData);
       alert("You must be logged in as a contractor to apply for jobs");
@@ -109,7 +106,7 @@ const Modal = ({ show, onClose, onSubmit, jobId, contractor_id }) => {
     }
 
     const formData = new FormData(e.target);
-    const answers = {
+    const applicationData = {
       job_id: jobId,
       contractor_id: contractor_id,
       tell_answer: formData.get('tell_answer'),
@@ -117,58 +114,31 @@ const Modal = ({ show, onClose, onSubmit, jobId, contractor_id }) => {
       ambitious_answer: formData.get('ambitious_answer'),
       location: jobDetails.location
     };
-    console.log("Form data collected:", answers);
 
     try {
-      // First check if already applied
-      console.log("Checking application status for contractor:", contractor_id, "job:", jobId);
-      const checkResponse = await fetch("http://localhost:3001/api/listings/check-application", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ 
-          contractor_id: contractor_id, 
-          job_id: jobId 
-        }),
-      });
-
-      console.log("Check response status:", checkResponse.status);
-      if (!checkResponse.ok) {
-        throw new Error('Error checking application status');
-      }
-
-      const checkResult = await checkResponse.json();
-      console.log("Check result:", checkResult);
-      
-      if (checkResult.applied) {
-        alert("You have already applied for this job.");
-        return;
-      }
-
-      // If not already applied, submit the application
-      console.log("Proceeding with application submission...");
+      // Submit application
       const response = await fetch("http://localhost:3001/api/listings/apply", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(answers),
+        body: JSON.stringify(applicationData),
       });
 
-      console.log("Submit response status:", response.status);
+      const data = await response.json();
+      console.log("Response from server:", data);
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to submit application');
+        throw new Error(data.error || 'Failed to submit application');
       }
 
-      const result = await response.json();
-      console.log("Application submitted successfully:", result);
+      console.log("Application submitted successfully:", data);
       alert("Application submitted successfully!");
       onClose();
     } catch (error) {
       console.error("Error in submission process:", error);
-      alert(`Error: ${error.message}`);
+      // Show the specific error message
+      alert(error.message);
     }
   };
 
