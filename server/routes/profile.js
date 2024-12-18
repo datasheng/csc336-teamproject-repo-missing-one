@@ -90,6 +90,8 @@ router.get("/:contractor_id", async (req, res) => {
         });
     });
 });
+
+
 router.put("/:contractor_id", async (req, res) => {
   const { contractor_id } = req.params;
   const { bio, phone_number, role_status, education } = req.body;

@@ -18,7 +18,7 @@ export default function Navbar() {
     localStorage.removeItem('token');
     localStorage.removeItem('userData');
     setIsLoggedIn(false);
-    router.push('/'); // Redirect to home page after logout
+    router.push('/'); 
   };
 
   return (
